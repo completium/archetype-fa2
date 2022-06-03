@@ -511,7 +511,7 @@ entry set_token_metadata (itokenid : nat, itokenMetadata: map<string, bytes>) {
 }
 
 //----------------------------------------------------------------------------
-// Getters (TZIP4 view)
+// Getters & views
 //----------------------------------------------------------------------------
 
 /**
@@ -521,6 +521,15 @@ entry set_token_metadata (itokenid : nat, itokenMetadata: map<string, bytes>) {
 getter balance_of (requests : list<balance_of_request>) : list<balance_of_response> {
   return map(requests, br -> {
     request = br;
-    balance_ = (ledger[br.btoken_id] ? the.lowner = br.bo_owner ? 1 : 0 : 0)
+    balance_ = (ledger[br.btoken_id] ? (the.lowner = br.bo_owner ? 1 : 0) : 0)
   })
+}
+
+/**
+* View (since Hangzhou) to return token's royalties
+* @param tokenid token id
+* Note: returns empty list if token does not exist in royalties map
+*/
+view get_royalties(tokenId : nat) : list<part> {
+  return (royalties[tokenId] ? the.rvalue : emptylist<part>())
 }
