@@ -1,1 +1,1 @@
-# archetype-fa2-fungible
+# archetype-fa2

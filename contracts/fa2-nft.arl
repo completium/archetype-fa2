@@ -11,6 +11,7 @@ constant EXPIRY_TOO_BIG           : string = "EXPIRY_TOO_BIG"
 constant FA2_INSUFFICIENT_BALANCE : string = "FA2_INSUFFICIENT_BALANCE"
 constant FA2_INVALID_AMOUNT       : string = "FA2_INVALID_AMOUNT"
 constant FA2_NOT_OPERATOR         : string = "FA2_NOT_OPERATOR"
+constant FA2_TOKEN_UNDEFINED      : string = "FA2_TOKEN_UNDEFINED"
 constant MISSIGNED                : string = "MISSIGNED"
 constant NO_ENTRY_FOR_USER        : string = "NO_ENTRY_FOR_USER"
 constant PERMIT_EXPIRED           : string = "PERMIT_EXPIRED"
@@ -85,6 +86,17 @@ function is_not_paused() : bool {
 //----------------------------------------------------------------------------
 // Data types
 //----------------------------------------------------------------------------
+
+record part {
+  partAccount : address;
+  partValue   : nat;
+}
+
+asset royalties identified by rtokenid to big_map {
+  rtokenid : nat;
+  rvalue : list<part>;
+}
+
 asset ledger identified by ltokenid to big_map {
   ltokenid   : nat;
   lowner     : address;
@@ -207,7 +219,7 @@ function check_owner_and_operator(txs : list<transfer_arg>) : bool {
           (operator.contains((caller, td.token_id_dest, %from)) or
            operator_for_all.contains((caller, %from)))
         else
-          ledger.contains((caller, tokenid));
+          ledger.contains(tokenid);
     end
     done
   done;
@@ -360,16 +372,9 @@ entry transfer_gasless (batch : list<list<transfer_arg> * (key * signature)>) {
       var tds = tx.ta_txs;
       for td in tds do begin
         var tokenid = td.token_id_dest;
-        if not ledger.contains((%from, tokenid)) and td.token_amount_dest > 0 then fail(FA2_INSUFFICIENT_BALANCE);
-        var amount_ = ledger[(%from, tokenid)].lamount;
-        if td.token_amount_dest > amount_ then
-          fail(FA2_INSUFFICIENT_BALANCE)
-        else if td.token_amount_dest = amount_ then
-          ledger.remove((%from, tokenid))
-        else begin
-          ledger.update((%from, tokenid), { lamount -= td.token_amount_dest });
-        end;
-        ledger.addupdate((td.to_dest, tokenid), { lamount += td.token_amount_dest })
+        dorequire(ledger.contains(tokenid), FA2_TOKEN_UNDEFINED);
+        dorequire(ledger[tokenid].lowner = %from, FA2_INSUFFICIENT_BALANCE);
+        ledger.update(tokenid, { lowner = td.to_dest });
       end done
     done
   done
@@ -425,16 +430,9 @@ entry %transfer (txs : list<transfer_arg>) {
       var tds = tx.ta_txs;
       for td in tds do begin
         var tokenid = td.token_id_dest;
-        if not ledger.contains((%from, tokenid)) and td.token_amount_dest > 0 then fail(FA2_INSUFFICIENT_BALANCE);
-        var amount_ = ledger[(%from, tokenid)].lamount;
-        if td.token_amount_dest > amount_ then
-          fail(FA2_INSUFFICIENT_BALANCE)
-        else if td.token_amount_dest = amount_ then
-          ledger.remove((%from, tokenid))
-        else begin
-          ledger.update((%from, tokenid), { lamount -= td.token_amount_dest });
-        end;
-        ledger.addupdate((td.to_dest, tokenid), { lamount += td.token_amount_dest })
+        dorequire(ledger.contains(tokenid), FA2_TOKEN_UNDEFINED);
+        dorequire(ledger[tokenid].lowner = %from, FA2_INSUFFICIENT_BALANCE);
+        ledger.update(tokenid, { lowner = td.to_dest });
       end done
     done
   }
@@ -465,33 +463,28 @@ entry collect(dst : address) {
 * @param itokenid id of token
 * @param iamount amount of token
 */
-entry mint (iowner : address, itokenid : nat, iamount : nat) {
+entry mint (iowner : address, itokenid : nat, itokenMetadata: map<string, bytes>, iroyalties : list<part>) {
   called by owner
   require { r11: is_not_paused() }
   effect {
-    ledger.addupdate((iowner, itokenid), { lamount += iamount });
+    ledger.add({ ltokenid = itokenid; lowner = iowner });
+    token_metadata.addupdate(itokenid, {token_id = itokenid; token_info = itokenMetadata});
+    royalties.put({ rtokenid = itokenid; rvalue = iroyalties });
   }
 }
 
 /**
 * Burn an amount of token
-* @param itokenid id of token
-* @param iamount amount to burn
+* @param itokenid token to burn
 */
-entry burn(itokenid : nat, iamount : nat) {
+entry burn(itokenid : nat) {
   require { r2 : is_not_paused() }
   effect {
-    if (ledger.contains((caller, itokenid))) then
-    begin
-      var vamount = ledger[(caller, itokenid)].lamount;
-      if (vamount > iamount)
-      then ledger.update((caller, itokenid), { lamount -= iamount })
-      else if (vamount = iamount)
-        then ledger.remove((caller, itokenid))
-        else fail(FA2_INSUFFICIENT_BALANCE);
-    end
-    else
-      fail(FA2_INSUFFICIENT_BALANCE);
+    dorequire(ledger.contains(itokenid), FA2_TOKEN_UNDEFINED);
+    dorequire(ledger[itokenid].lowner = caller, FA2_INSUFFICIENT_BALANCE);
+    ledger.remove(itokenid);
+    token_metadata.remove(itokenid);
+    royalties.remove(itokenid)
   }
 }
 
@@ -528,6 +521,6 @@ entry set_token_metadata (itokenid : nat, itokenMetadata: map<string, bytes>) {
 getter balance_of (requests : list<balance_of_request>) : list<balance_of_response> {
   return map(requests, br -> {
     request = br;
-    balance_ = (ledger[br.btoken_id] ? 1 : 0)
+    balance_ = (ledger[br.btoken_id] ? the.lowner = br.bo_owner ? 1 : 0 : 0)
   })
 }
