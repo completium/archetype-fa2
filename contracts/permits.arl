@@ -64,7 +64,7 @@ entry set_metadata(k: string, d : option<bytes>) {
   called by owner
   require { md_r1 : is_not_paused() }
   effect {
-    metadata := update(metadata, k, d)
+    metadata.update(k, d)
   }
 }
 
