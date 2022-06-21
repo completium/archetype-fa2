@@ -56,7 +56,7 @@ entry set_metadata(k: string, d : option<bytes>) {
   called by owner
   require { md_r1 : is_not_paused() }
   effect {
-    metadata := update(metadata, k, d)
+    metadata.update(k, d)
   }
 }
 
@@ -208,7 +208,7 @@ entry update_operators (upl : list<or<operator_param, operator_param>>) {
       match up with
       | left(param) -> (* add *)
         do_require(param.opp_owner = caller , CALLER_NOT_OWNER);
-        operator.add({
+        operator.put({
           oaddr  = param.opp_operator;
           otoken = param.opp_token_id;
           oowner = param.opp_owner
