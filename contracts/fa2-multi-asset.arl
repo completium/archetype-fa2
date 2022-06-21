@@ -293,25 +293,25 @@ entry %transfer (txs : list<transfer_param>) {
   }
 }
 
-entry mint (tow : address, tid : nat, iamount : nat) {
+entry mint (tow : address, tid : nat, nbt : nat) {
   called by owner
   require { fa2_r5: is_not_paused() }
   effect {
-    ledger.add_update((tow, tid), { lamount += iamount });
+    ledger.add_update((tow, tid), { lamount += nbt });
   }
 }
 
-entry burn(tid : nat, iamount : nat) {
+entry burn(tid : nat, nbt : nat) {
   constant {
     amount ?is ledger[(caller, tid)]?.lamount otherwise FA2_INSUFFICIENT_BALANCE
   }
   require {
     fa2_r6: is_not_paused();
-    fa2_r7: amount >= iamount otherwise FA2_INSUFFICIENT_BALANCE
+    fa2_r7: amount >= nbt otherwise FA2_INSUFFICIENT_BALANCE
   }
   effect {
-    if (amount > iamount) then
-      ledger.update((caller, tid), { lamount -= iamount })
+    if (amount > nbt) then
+      ledger.update((caller, tid), { lamount -= nbt })
     else ledger.remove((caller, tid))
   }
 }
