@@ -151,22 +151,30 @@ entry set_default_expiry(v : nat) {
 }
 
 entry permit(pk : key, sig : signature, data : bytes) {
-  require { r4: is_not_paused() }
+  constant {
+    user          is key_to_address(pk);
+    usr_permit    is permits[user] ?
+                      (the.counter, the.user_permits) :
+                      (0, make_map<bytes, user_permit>([]));
+    pcounter      is usr_permit[0];
+    puser_permits is usr_permit[1];
+    to_sign       is pack(((self_address, self_chain_id), (pcounter, data)));
+    usr_expiry    is get_default_expiry(user);
+  }
+  require {
+    p4: is_not_paused();
+    p5: check_signature(pk, sig, to_sign) otherwise (MISSIGNED, to_sign)
+  }
   effect {
-    const user = key_to_address(pk);
-    const empty : map<bytes, user_permit> = [];
-    const up = permits[user] ? (the.counter, the.user_permits) : (0, empty);
-    const pcounter      = up[0];
-    const puser_permits = up[1];
-    const to_sign = pack(((self_address, self_chain_id), (pcounter, data)));
-    const e = get_default_expiry(user);
-    do_require(check_signature(pk, sig, to_sign), (MISSIGNED, to_sign));
     permits.add_update(user, {
       counter += 1;
-      user_permits = put(puser_permits, data, { expiry = some(e); created_at = now })
+      user_permits = put(puser_permits, data, {
+        expiry = some(usr_expiry);
+        created_at = now
+      })
     });
     for (k, v) in permits[user].user_permits do
-      if has_expired(v, e)
+      if has_expired(v, usr_expiry)
       then permits[user].user_permits.remove(k)
     done
   }
@@ -174,23 +182,35 @@ entry permit(pk : key, sig : signature, data : bytes) {
 
 entry consume(signer : address, data: bytes, err: string) {
   called by consumer
+  constant {
+   permit_key     is blake2b(data);
+   signer_expiry  is get_expiry(signer, permit_key);
+   lpermit       ?is permits[signer]                  otherwise USER_PERMIT_NOT_FOUND;
+   luser_permits ?is lpermit.user_permits[permit_key] otherwise err;
+  }
+  require {
+    p6: is_not_paused()
+  }
+  fail if {
+    p7 : has_expired(luser_permits, signer_expiry) with PERMIT_EXPIRED
+  }
   effect {
-    const permit_key = blake2b(data);
-    const e = get_expiry(signer, permit_key);
-    const lpermit ?= permits[signer] : USER_PERMIT_NOT_FOUND;
-    const luser_permits ?= lpermit.user_permits[permit_key] : err;
-    do_fail_if(has_expired(luser_permits, e), PERMIT_EXPIRED);
     permits[signer].user_permits.remove(permit_key)
   }
 }
 
 entry check(signer : key, sig : signature, data : bytes) {
   called by consumer
+  constant {
+    pkh      is key_to_address(signer);
+    lcounter is permits[pkh] ? the.counter : 0;
+    to_sign  is pack((self_address, lcounter, blake2b(data)));
+  }
+  require {
+    p8: is_not_paused();
+    p9: check_signature(signer, sig, to_sign) otherwise (MISSIGNED, to_sign)
+  }
   effect {
-    const pkh = key_to_address(signer);
-    const lcounter = permits[pkh] ? the.counter : 0;
-    const to_sign : bytes = pack((self_address, lcounter, blake2b(pack(data))));
-    do_require(check_signature(signer, sig, to_sign), (MISSIGNED, data));
     permits.add_update(pkh, { counter = (lcounter + 1)});
   }
 }

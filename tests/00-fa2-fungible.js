@@ -15,6 +15,7 @@ const assert = require('assert');
 
 // contracts
 let fa2;
+let permits;
 
 // accounts
 const alice = getAccount('alice');
@@ -35,19 +36,42 @@ setQuiet(true);
 const timestamp_now = Math.floor(Date.now() / 1000)
 setMockupNow(timestamp_now)
 
-describe('[FA2 fungible] Contract deployment', async () => {
-  it('FA2 fungible contract deployment should succeed', async () => {
-    [fa2, _] = await deploy(
-      './contracts/fa2-fungible.arl',
+describe('[FA2 fungible] Contracts deployment', async () => {
+  it('Permits contract deployment should succeed', async () => {
+    [permits, _] = await deploy(
+      './contracts/permits.arl',
       {
         parameters: {
           owner: alice.pkh,
         },
         as: alice.pkh,
       }
+    )
+  });
+  it('FA2 fungible contract deployment should succeed', async () => {
+    [fa2, _] = await deploy(
+      './contracts/fa2-fungible.arl',
+      {
+        parameters: {
+          owner: alice.pkh,
+          permits: permits.address
+        },
+        as: alice.pkh,
+      }
     );
   });
 });
+
+describe('[FA2 fungible] Contract configuration', async () => {
+  it("Add FA2 as permit consumer", async () => {
+    await permits.manage_consumer({
+      arg: {
+        p : { "kind" : "left", "value" : `${fa2.address}` }
+      },
+      as: alice.pkh
+    })
+  })
+})
 
 describe('[FA2 fungible] Minting', async () => {
   it('Mint tokens as owner for ourself should succeed', async () => {
@@ -56,8 +80,8 @@ describe('[FA2 fungible] Minting', async () => {
 
     await fa2.mint({
       arg: {
-        iowner: alice.pkh,
-        iamount: 1000,
+        tow: alice.pkh,
+        nbt: 1000,
       },
       as: alice.pkh,
     });
@@ -70,8 +94,8 @@ describe('[FA2 fungible] Minting', async () => {
     await expectToThrow(async () => {
       await fa2.mint({
         arg: {
-          iowner: bob.pkh,
-          iamount: 1000,
+          tow: bob.pkh,
+          nbt: 1000,
         },
         as: bob.pkh,
       });
@@ -82,8 +106,8 @@ describe('[FA2 fungible] Minting', async () => {
     await expectToThrow(async () => {
       await fa2.mint({
         arg: {
-          iowner: carl.pkh,
-          iamount: 1000,
+          tow: carl.pkh,
+          nbt: 1000,
         },
         as: bob.pkh,
       });
@@ -96,8 +120,8 @@ describe('[FA2 fungible] Minting', async () => {
 
     await fa2.mint({
       arg: {
-        iowner: carl.pkh,
-        iamount: 1000,
+        tow: carl.pkh,
+        nbt: 1000,
       },
       as: alice.pkh,
     });
@@ -112,8 +136,8 @@ describe('[FA2 fungible] Minting', async () => {
 
     await fa2.mint({
       arg: {
-        iowner: user1.pkh,
-        iamount: 1,
+        tow: user1.pkh,
+        nbt: 1,
       },
       as: alice.pkh,
     });
@@ -190,7 +214,7 @@ describe('[FA2 fungible] Update operators', async () => {
     const operatorsAfterRemoval = await getValueFromBigMap(
       parseInt(storage.operator),
       exprMichelineToJson(
-        `(Pair "${fa2.address}" (Pair ${tokenId} "${alice.pkh}"))`
+        `(Pair "${permits.address}" (Pair ${tokenId} "${alice.pkh}"))`
       ),
       exprMichelineToJson(`(pair address (pair nat address))'`)
     );
@@ -201,20 +225,20 @@ describe('[FA2 fungible] Update operators', async () => {
 describe('[FA2 fungible] Add permit', async () => {
   it('Add a permit with the wrong signature should fail', async () => {
     const amount = 123;
-    const alicePermitNb = await getPermitNb(fa2, alice.pkh);
-    const { _, tosign } = await getTransferPermitData(alice, bob, fa2.address, amount, tokenId, alicePermitNb);
+    const alicePermitNb = await getPermitNb(permits, alice.pkh);
+    const { _, tosign } = await getTransferPermitData(alice, bob, permits.address, amount, tokenId, alicePermitNb);
     const error = `(Pair \"MISSIGNED\"\n        0x${tosign})`
     await expectToThrow(async () => {
       const permit = await mkTransferPermit(
         alice,
         bob,
-        fa2.address,
+        permits.address,
         amount,
         tokenId,
         alicePermitNb
       );
       const signature = "edsigu3QDtEZeSCX146136yQdJnyJDfuMRsDxiCgea3x7ty2RTwDdPpgioHWJUe86tgTCkeD2u16Az5wtNFDdjGyDpb7MiyU3fn";
-      await fa2.permit({
+      await permits.permit({
         argMichelson: `(Pair "${alice.pubk}" (Pair "${signature}" 0x${permit.hash}))`,
         as: bob.pkh,
       });
@@ -224,19 +248,19 @@ describe('[FA2 fungible] Add permit', async () => {
   it('Add a permit with the wrong hash should fail', async () => {
     const amount = 123;
     const hashPermit = '9aabe91d035d02ffb550bb9ea6fe19970f6fb41b5e69459a60b1ae401192a2dc';
-    const alicePermitNb = await getPermitNb(fa2, alice.pkh);
-    const { _, tosign } = await getSignHashPermit(hashPermit, fa2.address, alicePermitNb);
+    const alicePermitNb = await getPermitNb(permits, alice.pkh);
+    const { _, tosign } = await getSignHashPermit(hashPermit, permits.address, alicePermitNb);
     const error = `(Pair \"MISSIGNED\"\n        0x${tosign})`
     await expectToThrow(async () => {
       const permit = await mkTransferPermit(
         alice,
         bob,
-        fa2.address,
+        permits.address,
         amount,
         tokenId,
         alicePermitNb
       );
-      await fa2.permit({
+      await permits.permit({
         argMichelson: `(Pair "${alice.pubk}" (Pair "${permit.sig.prefixSig}" 0x${hashPermit}))`,
         as: bob.pkh,
       });
@@ -245,19 +269,19 @@ describe('[FA2 fungible] Add permit', async () => {
 
   it('Add a permit with the wrong public key should fail', async () => {
     const amount = 123;
-    const alicePermitNb = await getPermitNb(fa2, alice.pkh);
-    const { _, tosign } = await getTransferPermitData(alice, bob, fa2.address, amount, tokenId, alicePermitNb);
+    const alicePermitNb = await getPermitNb(permits, alice.pkh);
+    const { _, tosign } = await getTransferPermitData(alice, bob, permits.address, amount, tokenId, alicePermitNb);
     const error = `(Pair \"MISSIGNED\"\n        0x${tosign})`
     await expectToThrow(async () => {
       const permit = await mkTransferPermit(
         alice,
         bob,
-        fa2.address,
+        permits.address,
         amount,
         tokenId,
         alicePermitNb
       );
-      await fa2.permit({
+      await permits.permit({
         argMichelson: `(Pair "${bob.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
         as: bob.pkh,
       });
@@ -266,25 +290,25 @@ describe('[FA2 fungible] Add permit', async () => {
 
   it('Add a permit with the good hash, signature and public key should succeed', async () => {
     const amount = 123;
-    const alicePermitNb = await getPermitNb(fa2, alice.pkh);
+    const alicePermitNb = await getPermitNb(permits, alice.pkh);
 
     const permit = await mkTransferPermit(
       alice,
       bob,
-      fa2.address,
+      permits.address,
       amount,
       tokenId,
       alicePermitNb
     );
 
-    const initialPermit = await getPermit(fa2, alice.pkh);
+    const initialPermit = await getPermit(permits, alice.pkh);
     assert(initialPermit == null);
 
-    await fa2.permit({
+    await permits.permit({
       argMichelson: `(Pair "${alice.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
       as: bob.pkh,
     });
-    const addedPermit = await getPermit(fa2, alice.pkh)
+    const addedPermit = await getPermit(permits, alice.pkh)
 
     const addedPermitValue = jsonMichelineToExpr(addedPermit)
     const ref = `(Pair 1 None {Elt 0x12035464014ab9ab0dfcd16f27cbfaedf2329968d7daa9f2462b4867fa311073 (Pair (Some 31556952) "${GetIsoStringFromTimestamp(timestamp_now + 1)}")})`
@@ -293,27 +317,27 @@ describe('[FA2 fungible] Add permit', async () => {
 
   it('Add a duplicated permit should succeed', async () => {
     const amount = 123;
-    const initialPermit = await getPermit(fa2, alice.pkh);
+    const initialPermit = await getPermit(permits, alice.pkh);
 
     const initialPermitValue = jsonMichelineToExpr(initialPermit)
     const initialref = `(Pair 1 None {Elt 0x12035464014ab9ab0dfcd16f27cbfaedf2329968d7daa9f2462b4867fa311073 (Pair (Some 31556952) "${GetIsoStringFromTimestamp(timestamp_now + 1)}")})`
     assert(initialPermitValue == initialref)
 
-    const alicePermitNb = await getPermitNb(fa2, alice.pkh);
+    const alicePermitNb = await getPermitNb(permits, alice.pkh);
     const permit = await mkTransferPermit(
       alice,
       bob,
-      fa2.address,
+      permits.address,
       amount,
       tokenId,
       alicePermitNb
     );
-    await fa2.permit({
+    await permits.permit({
       argMichelson: `(Pair "${alice.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
       as: bob.pkh,
     });
 
-    const addedPermit = await getPermit(fa2, alice.pkh);
+    const addedPermit = await getPermit(permits, alice.pkh);
 
     const addedPermitValue = jsonMichelineToExpr(addedPermit)
     const ref = `(Pair 2 None {Elt 0x12035464014ab9ab0dfcd16f27cbfaedf2329968d7daa9f2462b4867fa311073 (Pair (Some 31556952) "${GetIsoStringFromTimestamp(timestamp_now + 1)}")})`
@@ -324,53 +348,53 @@ describe('[FA2 fungible] Add permit', async () => {
     const amount = 123;
     const expiry = 1;
 
-    let alicePermitNb = await getPermitNb(fa2, alice.pkh);
+    let alicePermitNb = await getPermitNb(permits, alice.pkh);
     const permit = await mkTransferPermit(
       alice,
       bob,
-      fa2.address,
+      permits.address,
       amount,
       tokenId,
       alicePermitNb
     );
-    await fa2.permit({
+    await permits.permit({
       argMichelson: `(Pair "${alice.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
       as: bob.pkh,
     });
 
-    const addedPermit = await getPermit(fa2, alice.pkh);
+    const addedPermit = await getPermit(permits, alice.pkh);
     const addedPermitValue = jsonMichelineToExpr(addedPermit)
     const addedPermitref = `(Pair 3 None {Elt 0x12035464014ab9ab0dfcd16f27cbfaedf2329968d7daa9f2462b4867fa311073 (Pair (Some 31556952) "${GetIsoStringFromTimestamp(timestamp_now + 1)}")})`
     assert(addedPermitValue == addedPermitref, "invalid value")
 
-    await fa2.set_expiry({
+    await permits.set_expiry({
       argMichelson: `(Pair (Some ${expiry}) (Some 0x${permit.hash}))`,
       as: alice.pkh,
     });
 
-    const expiryRes = await getPermit(fa2, alice.pkh);
+    const expiryRes = await getPermit(permits, alice.pkh);
     const expiryResValue = jsonMichelineToExpr(expiryRes)
     const expiryResRef = `(Pair 3 None {Elt 0x12035464014ab9ab0dfcd16f27cbfaedf2329968d7daa9f2462b4867fa311073 (Pair (Some 1) "${GetIsoStringFromTimestamp(timestamp_now + 1)}")})`
     assert(expiryResValue == expiryResRef, "invalid value")
 
     setMockupNow(timestamp_now + 1100);
 
-    alicePermitNb = await getPermitNb(fa2, alice.pkh);
+    alicePermitNb = await getPermitNb(permits, alice.pkh);
     const permitAfter = await mkTransferPermit(
       alice,
       carl,
-      fa2.address,
+      permits.address,
       amount,
       tokenId,
       alicePermitNb
     );
 
-    await fa2.permit({
+    await permits.permit({
       argMichelson: `(Pair "${alice.pubk}" (Pair "${permitAfter.sig.prefixSig}" 0x${permitAfter.hash}))`,
       as: bob.pkh,
     });
 
-    const afterSecondPermitRes = await getPermit(fa2, alice.pkh);
+    const afterSecondPermitRes = await getPermit(permits, alice.pkh);
     const afterSecondPermitResResValue = jsonMichelineToExpr(afterSecondPermitRes)
     const afterSecondPermitResResRef = `(Pair 4 None {Elt 0x5da618ea94d598930a3d5de331ea4335e7115840e8c21a233c1711f864f8042e (Pair (Some 31556952) "${GetIsoStringFromTimestamp(timestamp_now + 1101)}")})`
     assert(afterSecondPermitResResValue == afterSecondPermitResResRef, "invalid value")
@@ -474,13 +498,13 @@ describe('[FA2 fungible] Transfers', async () => {
 describe('[FA2 fungible] Transfers gasless ', async () => {
   it('Transfer gasless simple amount of token', async () => {
     const amount = 1;
-    const counter = await getPermitNb(fa2, user1.pkh);
+    const counter = await getPermitNb(permits, user1.pkh);
     const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
     const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
     assert(balance_user1_before === '1', "Invalid amount")
     assert(balance_user2_before === '0', "Invalid amount")
 
-    const p = await mkTransferGaslessArgs(user1, user2, fa2.address, amount, tokenId, counter, user1.name);
+    const p = await mkTransferGaslessArgs(user1, user2, permits.address, amount, tokenId, counter, user1.name);
 
     await fa2.transfer_gasless({
       // argMichelson: `{Pair {Pair "${user1.pkh}" {Pair "${user2.pkh}" (Pair ${tokenId} ${amount})}} (Pair "${user1.pubk}" "${p.sig.prefixSig}")}`,
@@ -498,13 +522,13 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
 
   it('Transfer a token from another user with wrong a permit should fail', async () => {
     const amount = 1;
-    const counter = await getPermitNb(fa2, user2.pkh);
+    const counter = await getPermitNb(permits, user2.pkh);
     const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
     const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
     assert(balance_user2_before === '1', "Invalid amount")
 
-    const p = await mkTransferGaslessArgs(user2, user1, fa2.address, amount, tokenId, counter, user1.name);
+    const p = await mkTransferGaslessArgs(user2, user1, permits.address, amount, tokenId, counter, user1.name);
 
     const error = `(Pair \"MISSIGNED\"\n        0x${p.tosign})`
 
@@ -525,13 +549,13 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
 
   it('Transfer gasless', async () => {
     const amount = 1;
-    const counter = await getPermitNb(fa2, user2.pkh);
+    const counter = await getPermitNb(permits, user2.pkh);
     const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
     const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
     assert(balance_user2_before === '1', "Invalid amount")
 
-    const p = await mkTransferGaslessArgs(user2, user1, fa2.address, amount, tokenId, counter, user2.name);
+    const p = await mkTransferGaslessArgs(user2, user1, permits.address, amount, tokenId, counter, user2.name);
 
     await fa2.transfer_gasless({
       arg: {
@@ -552,7 +576,7 @@ describe('[FA2 fungible] Consume permit', async () => {
 
   it('Set global expiry with too big value should fail', async () => {
     await expectToThrow(async () => {
-      await fa2.set_expiry({
+      await permits.set_expiry({
         argMichelson: `(Pair (Some 999999999999999999999999999999999999999) (None))`,
         as: alice.pkh,
       });
@@ -561,7 +585,7 @@ describe('[FA2 fungible] Consume permit', async () => {
 
   it('Simple transfer with permit', async () => {
     const amount = 1;
-    const counter = await getPermitNb(fa2, user1.pkh);
+    const counter = await getPermitNb(permits, user1.pkh);
 
     const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
     const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
@@ -571,13 +595,13 @@ describe('[FA2 fungible] Consume permit', async () => {
     const permit = await mkTransferPermit(
       user1,
       user2,
-      fa2.address,
+      permits.address,
       amount,
       tokenId,
       counter
     );
 
-    await fa2.permit({
+    await permits.permit({
       argMichelson: `(Pair "${user1.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
       as: bob.pkh,
     });
@@ -597,7 +621,7 @@ describe('[FA2 fungible] Consume permit', async () => {
 
   it('Set expiry for an existing permit with too big value should fail', async () => {
     const amount = 1;
-    const counter = await getPermitNb(fa2, user2.pkh);
+    const counter = await getPermitNb(permits, user2.pkh);
 
     const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
     const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
@@ -607,19 +631,19 @@ describe('[FA2 fungible] Consume permit', async () => {
     const permit = await mkTransferPermit(
       user2,
       user1,
-      fa2.address,
+      permits.address,
       amount,
       tokenId,
       counter
     );
 
-    await fa2.permit({
+    await permits.permit({
       argMichelson: `(Pair "${user2.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
       as: user2.pkh,
     });
 
     await expectToThrow(async () => {
-      await fa2.set_expiry({
+      await permits.set_expiry({
         argMichelson: `(Pair (Some 999999999999999999999999999999999999999) (Some 0x${permit.hash}))`,
         as: user2.pkh,
       });
@@ -628,7 +652,7 @@ describe('[FA2 fungible] Consume permit', async () => {
 
   it('Set expiry with a correct value should succeed', async () => {
     const amount = 1;
-    const counter = await getPermitNb(fa2, user2.pkh);
+    const counter = await getPermitNb(permits, user2.pkh);
 
     const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
     const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
@@ -638,7 +662,7 @@ describe('[FA2 fungible] Consume permit', async () => {
     const permit = await mkTransferPermit(
       user2,
       user1,
-      fa2.address,
+      permits.address,
       amount,
       tokenId,
       counter
@@ -646,14 +670,14 @@ describe('[FA2 fungible] Consume permit', async () => {
 
     setMockupNow(timestamp_now)
 
-    await fa2.permit({
+    await permits.permit({
       argMichelson: `(Pair "${user2.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
       as: user2.pkh,
     });
 
     const expiry = 3600;
 
-    await fa2.set_expiry({
+    await permits.set_expiry({
       argMichelson: `(Pair (Some ${expiry}) (Some 0x${permit.hash}))`,
       as: user2.pkh,
     });
@@ -683,36 +707,36 @@ describe('[FA2 fungible] Consume permit', async () => {
 
   it('Set expiry with 0 (permit get deleted) should succeed', async () => {
     const amount = 12;
-    const counter = await getPermitNb(fa2, carl.pkh);
+    const counter = await getPermitNb(permits, carl.pkh);
 
     const permit = await mkTransferPermit(
       carl,
       bob,
-      fa2.address,
+      permits.address,
       amount,
       tokenId,
       counter
     );
 
-    const initialPermit = await getPermit(fa2, carl.pkh);
+    const initialPermit = await getPermit(permits, carl.pkh);
     assert(initialPermit == null);
 
-    await fa2.permit({
+    await permits.permit({
       argMichelson: `(Pair "${carl.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
       as: carl.pkh,
     });
 
-    const addedPermit = await getPermit(fa2, carl.pkh);
+    const addedPermit = await getPermit(permits, carl.pkh);
     const addedPermitValue = jsonMichelineToExpr(addedPermit)
     const addedPermitRef = `(Pair 1 None {Elt 0x976a3d63af06ce34e879432448471fde168fb92099514e6168467445273a82f6 (Pair (Some 31556952) "${GetIsoStringFromTimestamp(timestamp_now + 1)}")})`
     assert(addedPermitValue == addedPermitRef, "Invalid Value")
 
-    await fa2.set_expiry({
+    await permits.set_expiry({
       argMichelson: `(Pair (Some 0) (Some 0x${permit.hash}))`,
       as: carl.pkh,
     });
 
-    const finalPermit = await getPermit(fa2, carl.pkh);
+    const finalPermit = await getPermit(permits, carl.pkh);
     const finalPermitValue = jsonMichelineToExpr(finalPermit)
     const finalPermitRef = '(Pair 1 None {})'
     assert(finalPermitValue == finalPermitRef, "Invalid Value")
@@ -727,8 +751,8 @@ describe('[FA2 fungible] Set metadata', async () => {
 
     await fa2.set_metadata({
       arg: {
-        ikey: 'key',
-        idata: '0x'
+        k: 'key',
+        d: '0x'
       },
       as: alice.pkh,
     });
@@ -741,8 +765,8 @@ describe('[FA2 fungible] Set metadata', async () => {
     await expectToThrow(async () => {
       await fa2.set_metadata({
         arg: {
-          ikey: 'key',
-          idata: '0x'
+          k: 'key',
+          d: '0x'
         },
         as: bob.pkh,
       });
@@ -756,8 +780,8 @@ describe('[FA2 fungible] Set metadata', async () => {
 
     await fa2.set_metadata({
       arg: {
-        ikey: 'key',
-        idata: `0x${data}`
+        k: 'key',
+        d: `0x${data}`
       },
       as: alice.pkh,
     });
@@ -774,7 +798,7 @@ describe('[FA2 fungible] Burn', async () => {
 
     await fa2.burn({
       arg: {
-        iamount: 1
+        nbt: 1
       },
       as: user1.pkh,
     });
@@ -788,7 +812,7 @@ describe('[FA2 fungible] Burn', async () => {
     await expectToThrow(async () => {
       await fa2.burn({
         arg: {
-          iamount: 1
+          nbt: 1
         },
         as: user1.pkh,
       });
@@ -801,7 +825,7 @@ describe('[FA2 fungible] Burn', async () => {
 
     await fa2.burn({
       arg: {
-        iamount: amount,
+        nbt: amount,
       },
       as: carl.pkh,
     });
@@ -817,7 +841,7 @@ describe('[FA2 fungible] Burn', async () => {
     await expectToThrow(async () => {
       await fa2.burn({
         arg: {
-          iamount: 1000,
+          nbt: 1000,
         },
         as: carl.pkh,
       });
@@ -830,11 +854,18 @@ describe('[FA2 fungible] Burn', async () => {
 });
 
 describe('[FA2 fungible] Pause', async () => {
-  it('Set pause should succeed', async () => {
+  it('Set FA2 on pause should succeed', async () => {
     await fa2.pause({
       as: alice.pkh,
     });
     const storage = await fa2.getStorage();
+    assert(storage.paused == true);
+  });
+  it('Set Permits on pause should succeed', async () => {
+    await permits.pause({
+      as: alice.pkh,
+    });
+    const storage = await permits.getStorage();
     assert(storage.paused == true);
   });
 
@@ -842,8 +873,8 @@ describe('[FA2 fungible] Pause', async () => {
     await expectToThrow(async () => {
       await fa2.mint({
         arg: {
-          iowner: alice.pkh,
-          iamount: 1000,
+          tow: alice.pkh,
+          nbt: 1000,
         },
         as: alice.pkh,
       });
@@ -861,19 +892,18 @@ describe('[FA2 fungible] Pause', async () => {
 
   it('Add permit is not possible when contract is paused should fail', async () => {
     const amount = 1;
-    const counter = await getPermitNb(fa2, alice.pkh);
+    const counter = await getPermitNb(permits, alice.pkh);
 
+    const permit = await mkTransferPermit(
+      alice,
+      bob,
+      permits.address,
+      amount,
+      tokenId,
+      counter
+    );
     await expectToThrow(async () => {
-      const permit = await mkTransferPermit(
-        alice,
-        bob,
-        fa2.address,
-        amount,
-        tokenId,
-        counter
-      );
-
-      await fa2.permit({
+      await permits.permit({
         argMichelson: `(Pair "${alice.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
         as: bob.pkh,
       });
@@ -895,7 +925,7 @@ describe('[FA2 fungible] Pause', async () => {
     await expectToThrow(async () => {
       const bytes =
         '0x05070707070a00000016016a5569553c34c4bfe352ad21740dea4e2faad3da000a00000004f5f466ab070700000a000000209aabe91d035d02ffb550bb9ea6fe19970f6fb41b5e69459a60b1ae401192a2dc';
-      const argM = `(Pair "" ${bytes})`;
+      const argM = `(Pair "" (Some ${bytes}))`;
       await fa2.set_metadata({
         argMichelson: argM,
         as: alice.pkh,
@@ -911,14 +941,14 @@ describe('[FA2 fungible] Pause', async () => {
     const permit = await mkTransferPermit(
       carl,
       bob,
-      fa2.address,
+      permits.address,
       amount,
       tokenId,
       counter
     );
 
     await expectToThrow(async () => {
-      await fa2.set_expiry({
+      await permits.set_expiry({
         argMichelson: `(Pair (Some ${expiry}) (Some 0x${permit.hash}))`,
         as: alice.pkh,
       });
@@ -929,7 +959,7 @@ describe('[FA2 fungible] Pause', async () => {
     await expectToThrow(async () => {
       await fa2.burn({
         arg: {
-          iamount: 1
+          nbt: 1
         },
         as: alice.pkh,
       });
@@ -946,6 +976,9 @@ describe('[FA2 fungible] Pause', async () => {
 
   it('Unpause by owner should succeed', async () => {
     await fa2.unpause({
+      as: alice.pkh,
+    });
+    await permits.unpause({
       as: alice.pkh,
     });
   });

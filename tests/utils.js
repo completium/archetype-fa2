@@ -9,8 +9,8 @@ const permitDataType = exprMichelineToJson('(pair (pair address chain_id) (pair 
 const gaslessDataType = exprMichelineToJson('(pair address (pair nat bytes))');
 
 
-getPermit = async (fa2, pkh) => {
-  const storage = await fa2.getStorage();
+getPermit = async (permits, pkh) => {
+  const storage = await permits.getStorage();
 
   const permit = await getValueFromBigMap(
     parseInt(storage.permits),
@@ -21,8 +21,8 @@ getPermit = async (fa2, pkh) => {
   return permit
 }
 
-exports.getPermitNb = async (fa2, pkh) => {
-  const permit = await getPermit(fa2, pkh)
+exports.getPermitNb = async (permits, pkh) => {
+  const permit = await getPermit(permits, pkh)
   if (permit == null) return 0;
   return parseInt(permit.args[0].int)
 }
@@ -167,13 +167,13 @@ exports.errors = {
   CONTRACT_NOT_PAUSED: '"CONTRACT_NOT_PAUSED"',
   CONTRACT_PAUSED: '"CONTRACT_PAUSED"',
   EXPIRY_TOO_BIG: '"EXPIRY_TOO_BIG"',
-  INVALID_CALLER: '"InvalidCaller"',
+  INVALID_CALLER: '"INVALID_CALLER"',
   FA2_INSUFFICIENT_BALANCE: '"FA2_INSUFFICIENT_BALANCE"',
   FA2_INVALID_AMOUNT: '"FA2_INVALID_AMOUNT"',
   FA2_NOT_OPERATOR: '"FA2_NOT_OPERATOR"',
   FA2_TOKEN_UNDEFINED: '"FA2_TOKEN_UNDEFINED"',
   MISSIGNED: '"MISSIGNED"',
-  NO_ENTRY_FOR_USER: '"NO_ENTRY_FOR_USER"',
+  NO_ENTRY_FOR_USER: '"USER_PERMIT_NOT_FOUND"',
   PERMIT_EXPIRED: '"PERMIT_EXPIRED"',
   PERMIT_NOT_FOUND: '"PERMIT_NOT_FOUND"',
   PERMIT_USER_NOT_FOUND: '"PERMIT_USER_NOT_FOUND"',
