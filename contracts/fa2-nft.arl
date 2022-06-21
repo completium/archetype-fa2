@@ -158,13 +158,12 @@ function check_operator(txs : list<transfer_param>) : bool {
     const %from = tx.tp_from;
     const tds = tx.tp_txs;
     for td in tds do begin
-      const tokenid = td.token_id_dest;
       res &=
         if caller <> %from then
           (operator.contains((caller, td.token_id_dest, %from)) or
            operator_for_all.contains((caller, %from)))
         else
-          ledger.contains(tokenid);
+          ledger.contains(td.token_id_dest);
     end done
   done;
   return res
