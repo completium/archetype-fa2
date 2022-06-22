@@ -7,10 +7,8 @@ const {
   exprMichelineToJson,
   jsonMichelineToExpr,
   setMockupNow,
-  isMockup,
-  setEndpoint
 } = require('@completium/completium-cli');
-const { errors, mkTransferPermit, getBalanceLedger, mkTransferGaslessArgs, getPermitNb, getTransferPermitData, getSignHashPermit, getPermit, GetIsoStringFromTimestamp, mkPackDataTransferGasless, getMetadata } = require('./utils');
+const { errors, mkTransferPermit, mkTransferGaslessArgs, getPermitNb, getTransferPermitData, getSignHashPermit, getPermit, GetIsoStringFromTimestamp, mkPackDataTransferGasless, getMetadata } = require('./utils');
 const assert = require('assert');
 
 require('mocha/package.json');

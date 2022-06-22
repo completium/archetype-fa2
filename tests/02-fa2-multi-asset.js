@@ -15,6 +15,7 @@ const assert = require('assert');
 
 // contracts
 let fa2;
+let permits;
 
 // accounts
 const alice = getAccount('alice');
@@ -32,12 +33,24 @@ const timestamp_now = Math.floor(Date.now() / 1000)
 setMockupNow(timestamp_now)
 
 describe('[FA2 multi-asset] Contract deployment', async () => {
-  it('FA2 multi-asset contract deployment should succeed', async () => {
+  it('Permits contract deployment should succeed', async () => {
+    [permits, _] = await deploy(
+      './contracts/permits.arl',
+      {
+        parameters: {
+          owner: alice.pkh,
+        },
+        as: alice.pkh,
+      }
+    )
+  });
+  it('FA2 NFT contract deployment should succeed', async () => {
     [fa2, _] = await deploy(
       './contracts/fa2-multi-asset.arl',
       {
         parameters: {
           owner: alice.pkh,
+          permits: permits.address
         },
         as: alice.pkh,
       }
@@ -45,13 +58,24 @@ describe('[FA2 multi-asset] Contract deployment', async () => {
   });
 });
 
+describe('[FA2 fungible] Contract configuration', async () => {
+  it("Add FA2 as permit consumer", async () => {
+    await permits.manage_consumer({
+      arg: {
+        p : { "kind" : "left", "value" : `${fa2.address}` }
+      },
+      as: alice.pkh
+    })
+  })
+})
+
 describe('[FA2 multi-asset] Minting', async () => {
   it('Mint tokens as owner for ourself should succeed', async () => {
     await fa2.mint({
       arg: {
-        iowner: alice.pkh,
-        itokenid: 1,
-        iamount: 1000,
+        tow: alice.pkh,
+        tid: 1,
+        nbt: 1000,
       },
       as: alice.pkh,
     });
@@ -61,9 +85,9 @@ describe('[FA2 multi-asset] Minting', async () => {
     await expectToThrow(async () => {
       await fa2.mint({
         arg: {
-          iowner: bob.pkh,
-          itokenid: 1,
-          iamount: 1000,
+          tow: bob.pkh,
+          tid: 1,
+          nbt: 1000,
         },
         as: bob.pkh,
       });
@@ -74,9 +98,9 @@ describe('[FA2 multi-asset] Minting', async () => {
     await expectToThrow(async () => {
       await fa2.mint({
         arg: {
-          iowner: carl.pkh,
-          itokenid: 1,
-          iamount: 1000,
+          tow: carl.pkh,
+          tid: 1,
+          nbt: 1000,
         },
         as: bob.pkh,
       });
@@ -90,9 +114,9 @@ describe('[FA2 multi-asset] Minting', async () => {
 
     await fa2.mint({
       arg: {
-        iowner: carl.pkh,
-        itokenid: tokenid,
-        iamount: 1000,
+        tow: carl.pkh,
+        tid: tokenid,
+        nbt: 1000,
       },
       as: alice.pkh,
     });
@@ -108,9 +132,9 @@ describe('[FA2 multi-asset] Minting', async () => {
 
     await fa2.mint({
       arg: {
-        iowner: user1.pkh,
-        itokenid: tokenid,
-        iamount: 2,
+        tow: user1.pkh,
+        tid: tokenid,
+        nbt: 2,
       },
       as: alice.pkh,
     });
