@@ -686,7 +686,7 @@ describe('[FA2 NFT] Transfers', async () => {
   });
 });
 
-describe('[Single Public NFT] Transfers gasless ', async () => {
+describe('[FA2 NFT] Transfers gasless ', async () => {
   it('Transfer a token not owned should fail', async () => {
     const counter = await getPermitNb(permits, alice.pkh);
     await expectToThrowMissigned(async () => {
