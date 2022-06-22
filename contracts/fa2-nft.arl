@@ -248,7 +248,7 @@ entry do_transfer(txs : list<transfer_param>) {
       for td in tds do begin
         const tokenid = td.token_id_dest;
         const towner ?= ledger[tokenid]?.lowner : FA2_TOKEN_UNDEFINED;
-        do_require(towner = %from, FA2_INSUFFICIENT_BALANCE);
+        do_require(towner = %from and td.token_amount_dest = 1, FA2_INSUFFICIENT_BALANCE);
         ledger.update(tokenid, { lowner = td.to_dest });
       end done
     done
@@ -275,7 +275,7 @@ entry transfer_gasless (batch : list<gasless_param>) {
   }
 }
 
-entry %transfer (txs : list<transfer_param>) {
+entry %transfer(txs : list<transfer_param>) {
   require { fa2_r4 : is_not_paused() }
   effect {
     if not check_operator(txs) then begin
@@ -305,13 +305,13 @@ entry mint (tow : address, tid : nat, tmd: map<string, bytes>, roy : list<part>)
 }
 
 entry burn(tid : nat) {
-/*  constant {
+  constant {
     token_owner ?is ledger[tid]?.lowner otherwise FA2_TOKEN_UNDEFINED;
   }
   require {
     fa2_r6: is_not_paused();
-    fa2_r7: token_owner = caller otherwise FA2_INSUFFICIENT_BALANCE
-  } */
+    fa2_r7: token_owner = caller otherwise CALLER_NOT_OWNER
+  }
   effect {
     ledger.remove(tid);
     token_metadata.remove(tid);

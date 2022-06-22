@@ -443,7 +443,7 @@ describe('[FA2 fungible] Transfers', async () => {
     assert(balance_user2_after === '1', "Invalid amount")
   });
 
-  it('Transfer more tokens that owned should fail', async () => {
+  it('Transfer more tokens than owned should fail', async () => {
     const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
     const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
