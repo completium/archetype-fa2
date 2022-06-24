@@ -8,7 +8,7 @@ const {
   jsonMichelineToExpr,
   setMockupNow,
 } = require('@completium/completium-cli');
-const { errors, mkTransferPermit, mkTransferGaslessArgs, getPermitNb, getTransferPermitData, getSignHashPermit, getPermit, GetIsoStringFromTimestamp, mkPackDataTransferGasless, getMetadata } = require('./utils');
+const { errors, mkTransferPermit, mkTransferGaslessArgs, getPermitNb, getTransferPermitData, getSignHashPermit, getPermit, GetIsoStringFromTimestamp, mkPackDataTransferGasless, getMetadata, getValueLedgerNFT } = require('./utils');
 const assert = require('assert');
 
 require('mocha/package.json');
@@ -799,22 +799,9 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
       exprMichelineToJson(`address'`)
     );
 
-    assert(
-      "" + (counter+1) == addedPermit.args[0].int
-    );
-    storage = await fa2.getStorage();
-    var alicePostTransferBalances = await getValueFromBigMap(
-      parseInt(storage.ledger),
-      exprMichelineToJson(`${testTokenId}`),
-      exprMichelineToJson(`nat`)
-    );
-    assert(alicePostTransferBalances.string == bob.pkh);
-    var bobPostTransferBalances = await getValueFromBigMap(
-      parseInt(storage.ledger),
-      exprMichelineToJson(`${testTokenId}`),
-      exprMichelineToJson(`nat`)
-    );
-    assert(bobPostTransferBalances.string == bob.pkh);
+    assert("" + (counter+1) == addedPermit.args[0].int);
+    const valueLedgerTestTokenId = await getValueLedgerNFT(fa2, testTokenId)
+    assert(valueLedgerTestTokenId == bob.pkh);
   });
 
 });

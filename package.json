@@ -6,11 +6,14 @@
     "tests": "tests"
   },
   "scripts": {
-    "test": "mocha --timeout 0 --slow 99999999999999999 ./tests/*.js",
-    "deploy": "mocha --timeout 0 --slow 99999999999999999 ./scripts/deploy.js"
+    "test":             "mocha --timeout 0 --slow 99999999999999999 ./tests/*.js",
+    "test-fungible":    "mocha --timeout 0 --slow 99999999999999999 ./tests/00-fa2-fungible.js",
+    "test-nft":         "mocha --timeout 0 --slow 99999999999999999 ./tests/01-fa2-nft.js",
+    "test-multi-asset": "mocha --timeout 0 --slow 99999999999999999 ./tests/02-fa2-multi-asset.js",
+    "deploy":           "mocha --timeout 0 --slow 99999999999999999 ./scripts/deploy.js"
   },
   "dependencies": {
-    "@completium/completium-cli": "^0.4.1",
+    "@completium/completium-cli": "^0.4.3",
     "@taquito/taquito": "^12.0.0",
     "bignumber.js": "^9.0.2",
     "chai": "^4.3.4",

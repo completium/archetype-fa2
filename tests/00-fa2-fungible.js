@@ -10,7 +10,7 @@ const {
   setMockupNow,
   setQuiet,
 } = require('@completium/completium-cli');
-const { errors, mkTransferPermit, getBalanceLedger, mkTransferGaslessArgs, getPermitNb, getTransferPermitData, getSignHashPermit, getPermit, GetIsoStringFromTimestamp, mkPackDataTransferGasless, getMetadata } = require('./utils');
+const { errors, mkTransferPermit, getBalanceLedgerFungible, mkTransferGaslessArgs, getPermitNb, getTransferPermitData, getSignHashPermit, getPermit, GetIsoStringFromTimestamp, mkPackDataTransferGasless, getMetadata } = require('./utils');
 const assert = require('assert');
 
 // contracts
@@ -75,7 +75,7 @@ describe('[FA2 fungible] Contract configuration', async () => {
 
 describe('[FA2 fungible] Minting', async () => {
   it('Mint tokens as owner for ourself should succeed', async () => {
-    const balance_alice_before = await getBalanceLedger(fa2, alice.pkh);
+    const balance_alice_before = await getBalanceLedgerFungible(fa2, alice.pkh);
     assert(balance_alice_before === '123000000000000', "Invalid amount")
 
     await fa2.mint({
@@ -86,7 +86,7 @@ describe('[FA2 fungible] Minting', async () => {
       as: alice.pkh,
     });
 
-    const balance_alice_after = await getBalanceLedger(fa2, alice.pkh);
+    const balance_alice_after = await getBalanceLedgerFungible(fa2, alice.pkh);
     assert(balance_alice_after === '123000000001000', "Invalid amount")
   });
 
@@ -115,7 +115,7 @@ describe('[FA2 fungible] Minting', async () => {
   });
 
   it('Mint tokens as owner for someone else should succeed', async () => {
-    const balance_carl_before = await getBalanceLedger(fa2, carl.pkh);
+    const balance_carl_before = await getBalanceLedgerFungible(fa2, carl.pkh);
     assert(balance_carl_before === '0', "Invalid amount")
 
     await fa2.mint({
@@ -126,12 +126,12 @@ describe('[FA2 fungible] Minting', async () => {
       as: alice.pkh,
     });
 
-    const balance_carl_after = await getBalanceLedger(fa2, carl.pkh);
+    const balance_carl_after = await getBalanceLedgerFungible(fa2, carl.pkh);
     assert(balance_carl_after === '1000', "Invalid amount")
   });
 
   it('Mint token for user 1', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
 
     await fa2.mint({
@@ -142,7 +142,7 @@ describe('[FA2 fungible] Minting', async () => {
       as: alice.pkh,
     });
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
     assert(balance_user1_after === '1', "Invalid amount")
   });
 });
@@ -403,8 +403,8 @@ describe('[FA2 fungible] Add permit', async () => {
 
 describe('[FA2 fungible] Transfers', async () => {
   it('Transfer simple amount of token', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_before = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_before === '1', "Invalid amount")
     assert(balance_user2_before === '0', "Invalid amount")
 
@@ -415,16 +415,16 @@ describe('[FA2 fungible] Transfers', async () => {
       as: user1.pkh,
     });
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_after = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_after === '0', "Invalid amount")
     assert(balance_user2_after === '1', "Invalid amount")
 
   });
 
   it('Transfer a token from another user without a permit or an operator should fail', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_before = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
     assert(balance_user2_before === '1', "Invalid amount")
 
@@ -437,15 +437,15 @@ describe('[FA2 fungible] Transfers', async () => {
       });
     }, errors.NO_ENTRY_FOR_USER);
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_after = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_after === '0', "Invalid amount")
     assert(balance_user2_after === '1', "Invalid amount")
   });
 
   it('Transfer more tokens than owned should fail', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_before = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
     assert(balance_user2_before === '1', "Invalid amount")
 
@@ -458,15 +458,15 @@ describe('[FA2 fungible] Transfers', async () => {
       });
     }, errors.FA2_INSUFFICIENT_BALANCE);
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_after = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_after === '0', "Invalid amount")
     assert(balance_user2_after === '1', "Invalid amount")
   });
 
   it('Transfer tokens with an operator', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_before = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
     assert(balance_user2_before === '1', "Invalid amount")
 
@@ -487,8 +487,8 @@ describe('[FA2 fungible] Transfers', async () => {
       as: user2.pkh,
     });
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_after = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_after === '1', "Invalid amount")
     assert(balance_user2_after === '0', "Invalid amount")
   });
@@ -499,8 +499,8 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
   it('Transfer gasless simple amount of token', async () => {
     const amount = 1;
     const counter = await getPermitNb(permits, user1.pkh);
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_before = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_before === '1', "Invalid amount")
     assert(balance_user2_before === '0', "Invalid amount")
 
@@ -514,8 +514,8 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
       as: user3.pkh,
     });
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_after = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_after === '0', "Invalid amount")
     assert(balance_user2_after === '1', "Invalid amount")
   });
@@ -523,8 +523,8 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
   it('Transfer a token from another user with wrong a permit should fail', async () => {
     const amount = 1;
     const counter = await getPermitNb(permits, user2.pkh);
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_before = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
     assert(balance_user2_before === '1', "Invalid amount")
 
@@ -541,8 +541,8 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
       });
     }, error);
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_after = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_after === '0', "Invalid amount")
     assert(balance_user2_after === '1', "Invalid amount")
   });
@@ -550,8 +550,8 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
   it('Transfer gasless', async () => {
     const amount = 1;
     const counter = await getPermitNb(permits, user2.pkh);
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_before = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
     assert(balance_user2_before === '1', "Invalid amount")
 
@@ -564,8 +564,8 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
       as: user3.pkh,
     });
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_after = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_after === '1', "Invalid amount")
     assert(balance_user2_after === '0', "Invalid amount")
   });
@@ -587,8 +587,8 @@ describe('[FA2 fungible] Consume permit', async () => {
     const amount = 1;
     const counter = await getPermitNb(permits, user1.pkh);
 
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_before = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_before === '1', "Invalid amount")
     assert(balance_user2_before === '0', "Invalid amount")
 
@@ -613,8 +613,8 @@ describe('[FA2 fungible] Consume permit', async () => {
       as: user3.pkh,
     });
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_after = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_after === '0', "Invalid amount")
     assert(balance_user2_after === '1', "Invalid amount")
   });
@@ -623,8 +623,8 @@ describe('[FA2 fungible] Consume permit', async () => {
     const amount = 1;
     const counter = await getPermitNb(permits, user2.pkh);
 
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_before = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
     assert(balance_user2_before === '1', "Invalid amount")
 
@@ -654,8 +654,8 @@ describe('[FA2 fungible] Consume permit', async () => {
     const amount = 1;
     const counter = await getPermitNb(permits, user2.pkh);
 
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_before = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_before === '0', "Invalid amount")
     assert(balance_user2_before === '1', "Invalid amount")
 
@@ -699,8 +699,8 @@ describe('[FA2 fungible] Consume permit', async () => {
       },
       as: user3.pkh,
     });
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
+    const balance_user2_after = await getBalanceLedgerFungible(fa2, user2.pkh);
     assert(balance_user1_after === '1', "Invalid amount")
     assert(balance_user2_after === '0', "Invalid amount")
   });
@@ -793,7 +793,7 @@ describe('[FA2 fungible] Set metadata', async () => {
 
 describe('[FA2 fungible] Burn', async () => {
   it('Burn token should succeed', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, user1.pkh);
     assert(balance_user1_before === '1', "Invalid amount")
 
     await fa2.burn({
@@ -803,7 +803,7 @@ describe('[FA2 fungible] Burn', async () => {
       as: user1.pkh,
     });
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
     assert(balance_user1_after === '0', "Invalid amount")
 
   });
@@ -821,7 +821,7 @@ describe('[FA2 fungible] Burn', async () => {
 
   it('Burn tokens with a partial amount of tokens should succeed', async () => {
     const amount = 500
-    const balance_user1_before = await getBalanceLedger(fa2, carl.pkh);
+    const balance_user1_before = await getBalanceLedgerFungible(fa2, carl.pkh);
 
     await fa2.burn({
       arg: {
@@ -830,12 +830,12 @@ describe('[FA2 fungible] Burn', async () => {
       as: carl.pkh,
     });
 
-    const balance_user1_after = await getBalanceLedger(fa2, carl.pkh);
+    const balance_user1_after = await getBalanceLedgerFungible(fa2, carl.pkh);
     assert(parseInt(balance_user1_before) - amount == balance_user1_after, "Invalid Value")
   });
 
   it('Burn tokens with more tokens owned should failed', async () => {
-    const balance_carl_before = await getBalanceLedger(fa2, carl.pkh);
+    const balance_carl_before = await getBalanceLedgerFungible(fa2, carl.pkh);
     assert(balance_carl_before === '500', "Invalid amount")
 
     await expectToThrow(async () => {
@@ -847,7 +847,7 @@ describe('[FA2 fungible] Burn', async () => {
       });
     }, errors.FA2_INSUFFICIENT_BALANCE);
 
-    const balance_carl_after = await getBalanceLedger(fa2, carl.pkh);
+    const balance_carl_after = await getBalanceLedgerFungible(fa2, carl.pkh);
     assert(balance_carl_after === '500', "Invalid amount")
   });
 
@@ -1025,7 +1025,7 @@ describe('[FA2 fungible] Transfer ownership', async () => {
 describe('[FA2 fungible] Balance of', async () => {
 
   it('Simple balance of', async () => {
-    const balance_alice = await getBalanceLedger(fa2, alice.pkh);
+    const balance_alice = await getBalanceLedgerFungible(fa2, alice.pkh);
 
     const res = await runGetter("balance_of", fa2.address, {
       argMichelson: `{ Pair "${alice.pkh}" ${tokenId} }`,

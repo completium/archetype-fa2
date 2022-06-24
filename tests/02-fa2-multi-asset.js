@@ -10,7 +10,7 @@ const {
   setEndpoint,
   jsonMichelineToExpr,
 } = require('@completium/completium-cli');
-const { errors, mkTransferPermit, getBalanceLedger, mkTransferGaslessArgs, getPermitNb, getTransferPermitData, getSignHashPermit, getPermit, GetIsoStringFromTimestamp, mkPackDataTransferGasless, getMetadata } = require('./utils');
+const { errors, mkTransferPermit, getBalanceLedger, mkTransferGaslessArgs, getPermitNb, getTransferPermitData, getSignHashPermit, getPermit, GetIsoStringFromTimestamp, mkPackDataTransferGasless, getMetadata, getBalanceLedgerMultiAsset } = require('./utils');
 const assert = require('assert');
 
 // contracts
@@ -58,7 +58,7 @@ describe('[FA2 multi-asset] Contract deployment', async () => {
   });
 });
 
-describe('[FA2 fungible] Contract configuration', async () => {
+describe('[FA2 multi-asset] Contract configuration', async () => {
   it("Add FA2 as permit consumer", async () => {
     await permits.manage_consumer({
       arg: {
@@ -109,7 +109,7 @@ describe('[FA2 multi-asset] Minting', async () => {
 
   it('Mint tokens as owner for someone else should succeed', async () => {
     const tokenid = 1;
-    const balance_carl_before = await getBalanceLedger(fa2, tokenid, carl.pkh);
+    const balance_carl_before = await getBalanceLedgerMultiAsset(fa2, carl.pkh, tokenid);
     assert(balance_carl_before === '0', "Invalid amount")
 
     await fa2.mint({
@@ -121,13 +121,13 @@ describe('[FA2 multi-asset] Minting', async () => {
       as: alice.pkh,
     });
 
-    const balance_carl_after = await getBalanceLedger(fa2, tokenid, carl.pkh);
+    const balance_carl_after = await getBalanceLedgerMultiAsset(fa2, carl.pkh, tokenid);
     assert(balance_carl_after === '1000', "Invalid amount")
   });
 
   it('Mint token for user 1', async () => {
     const tokenid = 1;
-    const balance_user1_before = await getBalanceLedger(fa2, tokenid, user1.pkh);
+    const balance_user1_before = await getBalanceLedgerMultiAsset(fa2, user1.pkh, tokenid);
     assert(balance_user1_before === '0', "Invalid amount")
 
     await fa2.mint({
@@ -139,7 +139,7 @@ describe('[FA2 multi-asset] Minting', async () => {
       as: alice.pkh,
     });
 
-    const balance_user1_after = await getBalanceLedger(fa2, tokenid, user1.pkh);
+    const balance_user1_after = await getBalanceLedgerMultiAsset(fa2, user1.pkh, tokenid);
     assert(balance_user1_after === '2', "Invalid amount")
   });
 });
@@ -402,8 +402,8 @@ describe('[FA2 multi-asset] Transfers', async () => {
   it('Transfer simple amount of token', async () => {
     const tokenId = 1;
 
-    const balance_user1_before = await getBalanceLedger(fa2, tokenId, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, tokenId, user2.pkh);
+    const balance_user1_before = await getBalanceLedgerMultiAsset(fa2, user1.pkh, tokenId);
+    const balance_user2_before = await getBalanceLedgerMultiAsset(fa2, user2.pkh, tokenId);
     assert(balance_user1_before === '2', "Invalid amount")
     assert(balance_user2_before === '0', "Invalid amount")
 
@@ -414,8 +414,8 @@ describe('[FA2 multi-asset] Transfers', async () => {
       as: user1.pkh,
     });
 
-    const balance_user1_after = await getBalanceLedger(fa2, tokenId, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, tokenId, user2.pkh);
+    const balance_user1_after = await getBalanceLedgerMultiAsset(fa2, user1.pkh, tokenId);
+    const balance_user2_after = await getBalanceLedgerMultiAsset(fa2, user2.pkh, tokenId);
     assert(balance_user1_after === '1', "Invalid amount")
     assert(balance_user2_after === '1', "Invalid amount")
 

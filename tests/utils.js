@@ -142,12 +142,32 @@ const packDataToSign = async (ccounter, ccollection, cseller, owner, user, token
 
 exports.getPackDataToSign = packDataToSign
 
-exports.getBalanceLedger = async (fa2, pkh) => {
+exports.getBalanceLedgerFungible = async (fa2, pkh) => {
   const storage = await fa2.getStorage();
   const balance = await getValueFromBigMap(
     parseInt(storage.ledger),
     exprMichelineToJson(`"${pkh}"`),
     exprMichelineToJson(`address`)
+  );
+  return balance != null && balance.int !== undefined ? balance.int : '0';
+}
+
+exports.getValueLedgerNFT = async (fa2, tid) => {
+  const storage = await fa2.getStorage();
+  const balance = await getValueFromBigMap(
+    parseInt(storage.ledger),
+    exprMichelineToJson(`"${tid}"`),
+    exprMichelineToJson(`nat`)
+  );
+  return balance != null && balance.string !== undefined ? balance.string : null;
+}
+
+exports.getBalanceLedgerMultiAsset = async (fa2, pkh, tid) => {
+  const storage = await fa2.getStorage();
+  const balance = await getValueFromBigMap(
+    parseInt(storage.ledger),
+    exprMichelineToJson(`(Pair "${pkh}" ${tid})`),
+    exprMichelineToJson(`(pair address nat)`)
   );
   return balance != null && balance.int !== undefined ? balance.int : '0';
 }
