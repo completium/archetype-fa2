@@ -9,7 +9,7 @@ const permitDataType = exprMichelineToJson('(pair (pair address chain_id) (pair 
 const gaslessDataType = exprMichelineToJson('(pair address (pair nat bytes))');
 
 
-getPermit = async (permits, pkh) => {
+const getPermit = async (permits, pkh) => {
   const storage = await permits.getStorage();
 
   const permit = await getValueFromBigMap(
@@ -154,12 +154,12 @@ exports.getBalanceLedgerFungible = async (fa2, pkh) => {
 
 exports.getValueLedgerNFT = async (fa2, tid) => {
   const storage = await fa2.getStorage();
-  const balance = await getValueFromBigMap(
+  const value = await getValueFromBigMap(
     parseInt(storage.ledger),
-    exprMichelineToJson(`"${tid}"`),
+    exprMichelineToJson(`${tid}`),
     exprMichelineToJson(`nat`)
   );
-  return balance != null && balance.string !== undefined ? balance.string : null;
+  return value != null && value.string !== undefined ? value.string : null;
 }
 
 exports.getBalanceLedgerMultiAsset = async (fa2, pkh, tid) => {
@@ -180,6 +180,21 @@ exports.getMetadata = async (fa2, key) => {
     exprMichelineToJson(`string`)
   );
   return res != null && res.bytes !== undefined ? res.bytes : null;
+}
+
+const getValuePermit = async (permit, pkh) => {
+  const storage = await permit.getStorage();
+  const value = await getValueFromBigMap(
+    parseInt(storage.permits),
+    exprMichelineToJson(`"${pkh}"`),
+    exprMichelineToJson(`address`)
+  );
+  return value;
+}
+
+exports.getValuePermitCounter = async (permit, pkh) => {
+  const value = await getValuePermit(permit, pkh);
+  return value ? value.args[0].int : '0';
 }
 
 exports.errors = {

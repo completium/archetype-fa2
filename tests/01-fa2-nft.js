@@ -8,7 +8,7 @@ const {
   jsonMichelineToExpr,
   setMockupNow,
 } = require('@completium/completium-cli');
-const { errors, mkTransferPermit, mkTransferGaslessArgs, getPermitNb, getTransferPermitData, getSignHashPermit, getPermit, GetIsoStringFromTimestamp, mkPackDataTransferGasless, getMetadata, getValueLedgerNFT } = require('./utils');
+const { errors, mkTransferPermit, mkTransferGaslessArgs, getPermitNb, getTransferPermitData, getSignHashPermit, getPermit, GetIsoStringFromTimestamp, mkPackDataTransferGasless, getMetadata, getValueLedgerNFT, getValuePermitCounter } = require('./utils');
 const assert = require('assert');
 
 require('mocha/package.json');
@@ -748,8 +748,8 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
 
 
   it('Transfer tokens with permit should succeed', async () => {
-    var storage = await fa2.getStorage();
     const testTokenId = 11111
+    const testAmount = 1;
 
     await fa2.mint({
       arg: {
@@ -764,44 +764,29 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
       as: alice.pkh,
     });
 
-    var counter = await getPermitNb(permits, alice.pkh);
-    permit = await mkTransferGaslessArgs(
+    const valueLedgerTestTokenIdBefore = await getValueLedgerNFT(fa2, testTokenId)
+    assert(valueLedgerTestTokenIdBefore == alice.pkh);
+
+    const counter = await getPermitNb(permits, alice.pkh);
+    const testPermit = await mkTransferGaslessArgs(
       alice,
       bob,
       permits.address,
-      amount,
+      testAmount,
       testTokenId,
-      counter
+      counter,
+      'alice'
     );
-
-    var aliceBalances = await getValueFromBigMap(
-      parseInt(storage.ledger),
-      exprMichelineToJson(`${testTokenId}`),
-      exprMichelineToJson(`nat`)
-    );
-    assert(aliceBalances.string == alice.pkh);
-    var bobBalances = await getValueFromBigMap(
-      parseInt(storage.ledger),
-      exprMichelineToJson(`${testTokenId}`),
-      exprMichelineToJson(`nat`)
-    );
-    assert(bobBalances.string == alice.pkh);
 
     await fa2.transfer_gasless({
-      argMichelson: `{ Pair { Pair "${alice.pkh}" { Pair "${bob.pkh}" (Pair ${testTokenId} ${amount}) } } (Pair "${alice.pubk}" "${permit.sig.prefixSig}" )}`,
+      argMichelson: `{ Pair { Pair "${alice.pkh}" { Pair "${bob.pkh}" (Pair ${testTokenId} ${testAmount}) } } (Pair "${alice.pubk}" "${testPermit.sig.prefixSig}" )}`,
       as: bob.pkh,
     });
 
-    storage = await permits.getStorage();
-    var addedPermit = await getValueFromBigMap(
-      parseInt(storage.permits),
-      exprMichelineToJson(`"${alice.pkh}"`),
-      exprMichelineToJson(`address'`)
-    );
-
-    assert("" + (counter+1) == addedPermit.args[0].int);
-    const valueLedgerTestTokenId = await getValueLedgerNFT(fa2, testTokenId)
-    assert(valueLedgerTestTokenId == bob.pkh);
+    const addedPermitCounter = await getValuePermitCounter(permits, alice.pkh);
+    assert((counter + 1).toString() == addedPermitCounter);
+    const valueLedgerTestTokenIdAfter = await getValueLedgerNFT(fa2, testTokenId)
+    assert(valueLedgerTestTokenIdAfter == bob.pkh);
   });
 
 });
