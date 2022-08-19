@@ -409,9 +409,7 @@ describe('[FA2 fungible] Transfers', async () => {
     assert(balance_user2_before === '0', "Invalid amount")
 
     await fa2.transfer({
-      arg: {
-        txs: [[user1.pkh, [[user2.pkh, tokenId, 1]]]],
-      },
+      argMichelson: `{ Pair "${user1.pkh}" { Pair "${user2.pkh}" (Pair ${tokenId} 1) } }`,
       as: user1.pkh,
     });
 
@@ -430,9 +428,7 @@ describe('[FA2 fungible] Transfers', async () => {
 
     await expectToThrow(async () => {
       await fa2.transfer({
-        arg: {
-          txs: [[user1.pkh, [[user2.pkh, tokenId, 1]]]],
-        },
+        argMichelson: `{ Pair "${user1.pkh}" { Pair "${user2.pkh}" (Pair ${tokenId} 1) } }`,
         as: user2.pkh,
       });
     }, errors.NO_ENTRY_FOR_USER);
@@ -451,9 +447,7 @@ describe('[FA2 fungible] Transfers', async () => {
 
     await expectToThrow(async () => {
       await fa2.transfer({
-        arg: {
-          txs: [[user2.pkh, [[user1.pkh, tokenId, 2]]]],
-        },
+        argMichelson: `{ Pair "${user2.pkh}" { Pair "${user1.pkh}" (Pair ${tokenId} 2) } }`,
         as: user2.pkh,
       });
     }, errors.FA2_INSUFFICIENT_BALANCE);
@@ -476,9 +470,7 @@ describe('[FA2 fungible] Transfers', async () => {
     });
 
     await fa2.transfer({
-      arg: {
-        txs: [[user2.pkh, [[user1.pkh, tokenId, 1]]]],
-      },
+      argMichelson: `{ Pair "${user2.pkh}" { Pair "${user1.pkh}" (Pair ${tokenId} 1) } }`,
       as: user3.pkh,
     });
 
@@ -507,10 +499,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     const p = await mkTransferGaslessArgs(user1, user2, permits.address, amount, tokenId, counter, user1.name);
 
     await fa2.transfer_gasless({
-      // argMichelson: `{Pair {Pair "${user1.pkh}" {Pair "${user2.pkh}" (Pair ${tokenId} ${amount})}} (Pair "${user1.pubk}" "${p.sig.prefixSig}")}`,
-      arg: {
-        batch: [[[[user1.pkh, [[user2.pkh, tokenId, amount]]]], user1.pubk, p.sig.prefixSig]],
-      },
+      argMichelson: `{Pair {Pair "${user1.pkh}" {Pair "${user2.pkh}" (Pair ${tokenId} ${amount})}} (Pair "${user1.pubk}" "${p.sig.prefixSig}")}`,
       as: user3.pkh,
     });
 
@@ -534,9 +523,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
 
     await expectToThrow(async () => {
       await fa2.transfer_gasless({
-        arg: {
-          batch: [[[[user2.pkh, [[user1.pkh, tokenId, amount]]]], user2.pubk, p.sig.prefixSig]],
-        },
+        argMichelson: `{Pair {Pair "${user2.pkh}" {Pair "${user1.pkh}" (Pair ${tokenId} ${amount})}} (Pair "${user2.pubk}" "${p.sig.prefixSig}")}`,
         as: user3.pkh,
       });
     }, error);
@@ -558,9 +545,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     const p = await mkTransferGaslessArgs(user2, user1, permits.address, amount, tokenId, counter, user2.name);
 
     await fa2.transfer_gasless({
-      arg: {
-        batch: [[[[user2.pkh, [[user1.pkh, tokenId, amount]]]], user2.pubk, p.sig.prefixSig]],
-      },
+      argMichelson: `{Pair {Pair "${user2.pkh}" {Pair "${user1.pkh}" (Pair ${tokenId} ${amount})}} (Pair "${user2.pubk}" "${p.sig.prefixSig}")}`,
       as: user3.pkh,
     });
 
@@ -607,9 +592,7 @@ describe('[FA2 fungible] Consume permit', async () => {
     });
 
     await fa2.transfer({
-      arg: {
-        txs: [[user1.pkh, [[user2.pkh, tokenId, 1]]]],
-      },
+      argMichelson: `{ Pair "${user1.pkh}" { Pair "${user2.pkh}" (Pair ${tokenId} 1) } }`,
       as: user3.pkh,
     });
 
@@ -685,18 +668,14 @@ describe('[FA2 fungible] Consume permit', async () => {
     setMockupNow(timestamp_now + expiry + 10)
     await expectToThrow(async () => {
       await fa2.transfer({
-        arg: {
-          txs: [[user2.pkh, [[user1.pkh, tokenId, 1]]]],
-        },
+        argMichelson: `{ Pair "${user2.pkh}" { Pair "${user1.pkh}" (Pair ${tokenId} 1) } }`,
         as: user3.pkh,
       });
     }, errors.PERMIT_EXPIRED);
 
     setMockupNow(timestamp_now)
     await fa2.transfer({
-      arg: {
-        txs: [[user2.pkh, [[user1.pkh, tokenId, 1]]]],
-      },
+      argMichelson: `{ Pair "${user2.pkh}" { Pair "${user1.pkh}" (Pair ${tokenId} 1) } }`,
       as: user3.pkh,
     });
     const balance_user1_after = await getBalanceLedgerFungible(fa2, user1.pkh);
@@ -913,9 +892,7 @@ describe('[FA2 fungible] Pause', async () => {
   it('Transfer is not possible when contract is paused should fail', async () => {
     await expectToThrow(async () => {
       await fa2.transfer({
-        arg: {
-          txs: [[alice.pkh, [[bob.pkh, tokenId, 123]]]],
-        },
+        argMichelson: `{ Pair "${alice.pkh}" { Pair "${bob.pkh}" (Pair ${tokenId} 123) } }`,
         as: alice.pkh,
       });
     }, errors.CONTRACT_PAUSED);

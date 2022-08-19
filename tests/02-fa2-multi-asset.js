@@ -408,9 +408,7 @@ describe('[FA2 multi-asset] Transfers', async () => {
     assert(balance_user2_before === '0', "Invalid amount")
 
     await fa2.transfer({
-      arg: {
-        txs: [[user1.pkh, [[user2.pkh, tokenId, 1]]]],
-      },
+      argMichelson: `{ Pair "${user1.pkh}" { Pair "${user2.pkh}" (Pair ${tokenId} 1) } }`,
       as: user1.pkh,
     });
 
@@ -429,9 +427,7 @@ describe('[FA2 multi-asset] Transfers', async () => {
 
   //   await expectToThrow(async () => {
   //     await fa2.transfer({
-  //       arg: {
-  //         txs: [[user1.pkh, [[user2.pkh, tokenId, 1]]]],
-  //       },
+  //       argMichelson: `{ Pair "${user1.pkh}" { Pair "${user2.pkh}" (Pair ${tokenId} 1) } }`,
   //       as: user2.pkh,
   //     });
   //   }, errors.NO_ENTRY_FOR_USER);
@@ -450,9 +446,7 @@ describe('[FA2 multi-asset] Transfers', async () => {
 
   //   await expectToThrow(async () => {
   //     await fa2.transfer({
-  //       arg: {
-  //         txs: [[user2.pkh, [[user1.pkh, tokenId, 2]]]],
-  //       },
+  //       argMichelson: `{ Pair "${user2.pkh}" { Pair "${user1.pkh}" (Pair ${tokenId} 2) } }`,
   //       as: user2.pkh,
   //     });
   //   }, errors.FA2_INSUFFICIENT_BALANCE);
@@ -475,9 +469,7 @@ describe('[FA2 multi-asset] Transfers', async () => {
   //   });
 
   //   await fa2.transfer({
-  //     arg: {
-  //       txs: [[user2.pkh, [[user1.pkh, tokenId, 1]]]],
-  //     },
+  //     argMichelson: `{ Pair "${user2.pkh}" { Pair "${user1.pkh}" (Pair ${tokenId} 1) } }`,
   //     as: user3.pkh,
   //   });
 
@@ -606,9 +598,7 @@ describe('[FA2 multi-asset] Transfers', async () => {
 //     });
 
 //     await fa2.transfer({
-//       arg: {
-//         txs: [[user1.pkh, [[user2.pkh, tokenId, 1]]]],
-//       },
+//     argMichelson: `{ Pair "${user1.pkh}" { Pair "${user2.pkh}" (Pair ${tokenId} 1) } }`,
 //       as: user3.pkh,
 //     });
 
@@ -684,18 +674,14 @@ describe('[FA2 multi-asset] Transfers', async () => {
 //     setMockupNow(timestamp_now + expiry + 10)
 //     await expectToThrow(async () => {
 //       await fa2.transfer({
-//         arg: {
-//           txs: [[user2.pkh, [[user1.pkh, tokenId, 1]]]],
-//         },
+//         argMichelson: `{ Pair "${user2.pkh}" { Pair "${user1.pkh}" (Pair ${tokenId} 1) } }`,
 //         as: user3.pkh,
 //       });
 //     }, errors.PERMIT_EXPIRED);
 
 //     setMockupNow(timestamp_now)
 //     await fa2.transfer({
-//       arg: {
-//         txs: [[user2.pkh, [[user1.pkh, tokenId, 1]]]],
-//       },
+//       argMichelson: `{ Pair "${user2.pkh}" { Pair "${user1.pkh}" (Pair ${tokenId} 1) } }`,
 //       as: user3.pkh,
 //     });
 //     const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
@@ -906,9 +892,7 @@ describe('[FA2 multi-asset] Transfers', async () => {
 //   it('Transfer is not possible when contract is paused should fail', async () => {
 //     await expectToThrow(async () => {
 //       await fa2.transfer({
-//         arg: {
-//           txs: [[alice.pkh, [[bob.pkh, tokenId, 123]]]],
-//         },
+//         argMichelson: `{ Pair "${alice.pkh}" { Pair "${bob.pkh}" (Pair ${tokenId} 123) } }`,
 //         as: alice.pkh,
 //       });
 //     }, errors.CONTRACT_PAUSED);
