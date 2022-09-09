@@ -437,7 +437,7 @@ export class Fa2fungible {
         throw new Error("Contract not initialised");
     }
     async deploy(owner: ex.Address, permits: ex.Address, params: Partial<ex.Parameters>) {
-        const address = await ex.deploy("./contracts/fa2fungible.arl", {
+        const address = await ex.deploy("./contracts/fa2-fungible.arl", {
             owner: owner.toString(),
             permits: permits.toString()
         }, params);

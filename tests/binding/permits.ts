@@ -71,9 +71,12 @@ export class permits_value implements ex.ArchetypeType {
                 })])]);
     }
     equals(v: permits_value): boolean {
-        return (this.counter.equals(v.counter) && this.counter.equals(v.counter) && this.user_expiry.equals(v.user_expiry) && this.user_permits == v.user_permits);
+        return (this.counter.equals(v.counter) && this.counter.equals(v.counter) && this.user_expiry.equals(v.user_expiry) && JSON.stringify(this.user_permits) == JSON.stringify(v.user_permits));
     }
 }
+
+"[[{\"_content\":\"05020000004607070a0000001600006b82198cb179e8306c1bedd08f12dc863f328886020000002407070a000000160000a26828841890d3f3a2a1d4083839c7a882fe05010707000000bb01\"},{\"expiry\":{\"_content\":{\"_content\":\"31556952\"}},\"created_at\":\"2022-09-09T14:55:05.000Z\"}]]"
+"[[{\"_content\":\"12035464014ab9ab0dfcd16f27cbfaedf2329968d7daa9f2462b4867fa311073\"},                                                                                        {\"expiry\":{\"_content\":{\"_content\":\"31556952\"}},\"created_at\":\"2022-09-09T14:55:05.727Z\"}]]"
 export const permits_value_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("nat", ["%counter"]),
     ex.pair_array_to_mich_type([
