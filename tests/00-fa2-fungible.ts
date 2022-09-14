@@ -1,4 +1,4 @@
-import { Account, Bytes, expect_to_fail, get_account, Key, Nat, Option, option_to_mich_type, Or, pack, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, set_mockup, set_mockup_now, set_quiet, sign, Signature, string_to_mich } from '@completium/experiment-ts'
+import { Account, Bytes, expect_to_fail, get_account, Key, Nat, Option, option_to_mich_type, Or, pack, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, set_mockup, set_mockup_now, set_quiet, sign, Signature, string_to_mich, transfer } from '@completium/experiment-ts'
 
 import { get_packed_transfer_params, get_transfer_permit_data } from './utils'
 
@@ -287,101 +287,98 @@ describe('[FA2 fungible] Add permit', async () => {
     assert(after_second_permit_res?.equals(get_ref_user_permits(new Nat(4), after_packed_transfer_params, expiry, new_now)))
   });
 });
-/*
+
 describe('[FA2 fungible] Transfers', async () => {
   it('Transfer simple amount of token', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_before === '1', "Invalid amount")
-    assert(balance_user2_before === '0', "Invalid amount")
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before?.equals(new Nat(1)), "Invalid amount user 1")
+    assert(balance_user2_before == undefined, "Invalid amount user 2")
 
-    await fa2.transfer({
-      arg: {
-        txs: [[user1.pkh, [[user2.pkh, token_id, 1]]]],
-      },
-      as: user1.pkh,
-    });
+    await fa2_fungible.transfer([new transfer_param(
+      user1.get_address(),
+      [new transfer_destination(user2.get_address(), token_id, new Nat(1))])],
+      { as: user1 }
+    );
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_after === '0', "Invalid amount")
-    assert(balance_user2_after === '1', "Invalid amount")
-
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after == undefined, "Invalid amount after user1")
+    assert(balance_user2_after?.equals(new Nat(1)), "Invalid amount after user2")
   });
 
   it('Transfer a token from another user without a permit or an operator should fail', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_before === '0', "Invalid amount")
-    assert(balance_user2_before === '1', "Invalid amount")
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before == undefined, "Invalid amount user1")
+    assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
-    await expectToThrow(async () => {
-      await fa2.transfer({
-        arg: {
-          txs: [[user1.pkh, [[user2.pkh, token_id, 1]]]],
-        },
-        as: user2.pkh,
-      });
-    }, errors.NO_ENTRY_FOR_USER);
+    await expect_to_fail(async () => {
+      await fa2_fungible.transfer([new transfer_param(
+        user1.get_address(),
+        [new transfer_destination(user2.get_address(), token_id, new Nat(1))])],
+        { as: user2 }
+      );
+    }, fa2_fungible.errors.FA2_NOT_OPERATOR);
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_after === '0', "Invalid amount")
-    assert(balance_user2_after === '1', "Invalid amount")
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after == undefined, "Invalid amount after user 1")
+    assert(balance_user2_after?.equals(new Nat(1)), "Invalid amount after user 2")
   });
 
   it('Transfer more tokens than owned should fail', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_before === '0', "Invalid amount")
-    assert(balance_user2_before === '1', "Invalid amount")
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before == undefined, "Invalid amount user1")
+    assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
-    await expectToThrow(async () => {
-      await fa2.transfer({
-        arg: {
-          txs: [[user2.pkh, [[user1.pkh, token_id, 2]]]],
-        },
-        as: user2.pkh,
-      });
-    }, errors.FA2_INSUFFICIENT_BALANCE);
+    await expect_to_fail(async () => {
+      await fa2_fungible.transfer([new transfer_param(
+        user1.get_address(),
+        [new transfer_destination(user2.get_address(), token_id, new Nat(2))])],
+        { as: user1 }
+      );
+    }, fa2_fungible.errors.FA2_INSUFFICIENT_BALANCE);
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_after === '0', "Invalid amount")
-    assert(balance_user2_after === '1', "Invalid amount")
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after == undefined, "Invalid amount after user1")
+    assert(balance_user2_after?.equals(new Nat(1)), "Invalid amount after user2")
   });
 
   it('Transfer tokens with an operator', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_before === '0', "Invalid amount")
-    assert(balance_user2_before === '1', "Invalid amount")
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before == undefined, "Invalid amount user1")
+    assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
-    await fa2.update_operators({
-      argMichelson: `{Left (Pair "${user2.pkh}" "${user3.pkh}" ${token_id})}`,
-      as: user2.pkh,
-    });
+    await fa2_fungible.update_operators([
+      Or.Left<operator_param, operator_param>(new operator_param(user2.get_address(), user3.get_address(), token_id))
+      ],
+      { as: user2 }
+    );
 
-    await fa2.transfer({
-      arg: {
-        txs: [[user2.pkh, [[user1.pkh, token_id, 1]]]],
-      },
-      as: user3.pkh,
-    });
+    await fa2_fungible.transfer([new transfer_param(
+      user2.get_address(),
+      [new transfer_destination(user1.get_address(), token_id, new Nat(1))])],
+      { as: user3 }
+    );
 
-    await fa2.update_operators({
-      argMichelson: `{Right (Pair "${user2.pkh}" "${user3.pkh}" ${token_id})}`,
-      as: user2.pkh,
-    });
+    await fa2_fungible.update_operators([
+      Or.Right<operator_param, operator_param>(new operator_param(user2.get_address(), user3.get_address(), token_id))
+      ],
+      { as: user2 }
+    );
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_after === '1', "Invalid amount")
-    assert(balance_user2_after === '0', "Invalid amount")
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after?.equals(new Nat(1)), "Invalid amount after user1")
+    assert(balance_user2_after == undefined, "Invalid amount after user2")
   });
 
 });
-*/
+
 /*
 describe('[FA2 fungible] Transfers gasless ', async () => {
   it('Transfer gasless simple amount of token', async () => {

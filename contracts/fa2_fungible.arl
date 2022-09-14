@@ -160,7 +160,7 @@ function check_operator(txs : list<transfer_param>) : bool {
           (operator.contains((caller, td.token_id_dest, %from)) or
            operator_for_all.contains((caller, %from)))
         else
-          ledger.contains(caller);
+          true;
     end
     done
   done;
