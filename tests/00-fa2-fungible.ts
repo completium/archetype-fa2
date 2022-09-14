@@ -1,4 +1,4 @@
-import { Or, Account, expect_to_fail, get_account, Nat, Option, option_to_mich_type, pack, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, set_mockup, set_mockup_now, set_quiet, sign, string_to_mich, Key, Signature, Bytes } from '@completium/experiment-ts'
+import { Account, Bytes, expect_to_fail, get_account, Key, Nat, Option, option_to_mich_type, Or, pack, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, set_mockup, set_mockup_now, set_quiet, sign, Signature, string_to_mich } from '@completium/experiment-ts'
 
 import { get_packed_transfer_params, get_transfer_permit_data } from './utils'
 
@@ -6,8 +6,8 @@ const assert = require('assert');
 
 /* Contracts */
 
-import { fa2fungible, operator_key, operator_param, transfer_destination, transfer_param } from './binding/fa2-fungible';
-import { add, consumer_op, permits, permits_value, user_permit } from './binding/permits';
+import { fa2_fungible, operator_key, operator_param, transfer_destination, transfer_param } from './binding/fa2_fungible';
+import { add, permits, permits_value, user_permit } from './binding/permits';
 
 /* Accounts ----------------------------------------------------------------- */
 
@@ -58,102 +58,102 @@ describe('[FA2 fungible] Contracts deployment', async () => {
     await permits.deploy( alice.get_address(), { as: alice })
   });
   it('FA2 fungible contract deployment should succeed', async () => {
-    await fa2fungible.deploy(alice.get_address(), permits.get_address(), { as: alice })
+    await fa2_fungible.deploy(alice.get_address(), permits.get_address(), { as: alice })
   });
 });
 
 describe('[FA2 fungible] Contract configuration', async () => {
   it("Add FA2 as permit consumer", async () => {
-    await permits.manage_consumer(new add(fa2fungible.get_address()),  { as: alice })
+    await permits.manage_consumer(new add(fa2_fungible.get_address()),  { as: alice })
   })
 })
 
 describe('[FA2 fungible] Minting', async () => {
   it('Mint tokens as owner for ourself should succeed', async () => {
-    const balance_alice_before = await fa2fungible.get_ledger_value(alice.get_address())
+    const balance_alice_before = await fa2_fungible.get_ledger_value(alice.get_address())
     assert(balance_alice_before?.equals(new Nat('123000000000000')), "Invalid amount")
 
-    await fa2fungible.mint(alice.get_address(), new Nat(1000), { as: alice })
+    await fa2_fungible.mint(alice.get_address(), new Nat(1000), { as: alice })
 
-    const balance_alice_after = await fa2fungible.get_ledger_value(alice.get_address())
+    const balance_alice_after = await fa2_fungible.get_ledger_value(alice.get_address())
     assert(balance_alice_after?.equals(new Nat('123000000001000')), "Invalid amount")
   });
 
   it('Mint tokens as non owner for ourself should fail', async () => {
     await expect_to_fail(async () => {
-      await fa2fungible.mint(bob.get_address(), new Nat(1000), { as: bob })
-    }, fa2fungible.errors.INVALID_CALLER);
+      await fa2_fungible.mint(bob.get_address(), new Nat(1000), { as: bob })
+    }, fa2_fungible.errors.INVALID_CALLER);
   });
 
   it('Mint tokens as non owner for someone else should fail', async () => {
     await expect_to_fail(async () => {
-      await fa2fungible.mint(carl.get_address(), new Nat(1000), { as: bob })
-    }, fa2fungible.errors.INVALID_CALLER);
+      await fa2_fungible.mint(carl.get_address(), new Nat(1000), { as: bob })
+    }, fa2_fungible.errors.INVALID_CALLER);
   });
 
   it('Mint tokens as owner for someone else should succeed', async () => {
-    const balance_carl_before = await fa2fungible.get_ledger_value(carl.get_address())
+    const balance_carl_before = await fa2_fungible.get_ledger_value(carl.get_address())
     assert(balance_carl_before == undefined, "Invalid amount")
 
-    await fa2fungible.mint(carl.get_address(), new Nat(1000), { as: alice })
+    await fa2_fungible.mint(carl.get_address(), new Nat(1000), { as: alice })
 
-    const balance_carl_after = await fa2fungible.get_ledger_value(carl.get_address())
+    const balance_carl_after = await fa2_fungible.get_ledger_value(carl.get_address())
     assert(balance_carl_after?.equals(new Nat(1000)), "Invalid amount")
   });
 
   it('Mint token for user 1', async () => {
-    const balance_user1_before = await fa2fungible.get_ledger_value(user1.get_address())
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     assert(balance_user1_before == undefined, "Invalid amount")
 
-    await fa2fungible.mint(user1.get_address(), new Nat(1), { as: alice })
+    await fa2_fungible.mint(user1.get_address(), new Nat(1), { as: alice })
 
-    const balance_user1_after = await fa2fungible.get_ledger_value(user1.get_address())
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
     assert(balance_user1_after?.equals(new Nat(1)), "Invalid amount")
   });
 });
 
 describe('[FA2 fungible] Update operators', async () => {
   it('Add an operator for ourself should succeed', async () => {
-    const op_key = new operator_key(fa2fungible.get_address(), token_id, alice.get_address())
-    const has_operator_before = await fa2fungible.has_operator_value(op_key)
+    const op_key = new operator_key(fa2_fungible.get_address(), token_id, alice.get_address())
+    const has_operator_before = await fa2_fungible.has_operator_value(op_key)
     assert(has_operator_before == false)
-    await fa2fungible.update_operators([
-      Or.Left(new operator_param(alice.get_address(), fa2fungible.get_address(), token_id))
+    await fa2_fungible.update_operators([
+      Or.Left(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
     ], { as : alice })
-    const has_operator_after = await fa2fungible.has_operator_value(op_key)
+    const has_operator_after = await fa2_fungible.has_operator_value(op_key)
     assert(has_operator_after == true)
   });
 
   it('Remove a non existing operator should succeed', async () => {
-    await fa2fungible.update_operators([
+    await fa2_fungible.update_operators([
       Or.Right(new operator_param(alice.get_address(), bob.get_address(), token_id))
     ], { as : alice })
   });
 
   it('Remove an existing operator for another user should fail', async () => {
     await expect_to_fail(async () => {
-      await fa2fungible.update_operators([
-        Or.Right(new operator_param(alice.get_address(), fa2fungible.get_address(), token_id))
+      await fa2_fungible.update_operators([
+        Or.Right(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
       ], { as : bob })
-    }, fa2fungible.errors.CALLER_NOT_OWNER);
+    }, fa2_fungible.errors.CALLER_NOT_OWNER);
   });
 
   it('Add operator for another user should fail', async () => {
     await expect_to_fail(async () => {
-      await fa2fungible.update_operators([
-        Or.Left(new operator_param(bob.get_address(), fa2fungible.get_address(), token_id))
+      await fa2_fungible.update_operators([
+        Or.Left(new operator_param(bob.get_address(), fa2_fungible.get_address(), token_id))
       ], { as : alice });
-    }, fa2fungible.errors.CALLER_NOT_OWNER);
+    }, fa2_fungible.errors.CALLER_NOT_OWNER);
   });
 
   it('Remove an existing operator should succeed', async () => {
-    const op_key = new operator_key(fa2fungible.get_address(), token_id, alice.get_address())
-    const has_operator_before = await fa2fungible.has_operator_value(op_key)
+    const op_key = new operator_key(fa2_fungible.get_address(), token_id, alice.get_address())
+    const has_operator_before = await fa2_fungible.has_operator_value(op_key)
     assert(has_operator_before == true)
-    await fa2fungible.update_operators([
-      Or.Right(new operator_param(alice.get_address(), fa2fungible.get_address(), token_id))
+    await fa2_fungible.update_operators([
+      Or.Right(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
     ], { as : alice })
-    const has_operator_after = await fa2fungible.has_operator_value(op_key)
+    const has_operator_after = await fa2_fungible.has_operator_value(op_key)
     assert(has_operator_after == false)
   });
 });
@@ -287,7 +287,6 @@ describe('[FA2 fungible] Add permit', async () => {
     assert(after_second_permit_res?.equals(get_ref_user_permits(new Nat(4), after_packed_transfer_params, expiry, new_now)))
   });
 });
-
 /*
 describe('[FA2 fungible] Transfers', async () => {
   it('Transfer simple amount of token', async () => {
@@ -382,7 +381,8 @@ describe('[FA2 fungible] Transfers', async () => {
   });
 
 });
-
+*/
+/*
 describe('[FA2 fungible] Transfers gasless ', async () => {
   it('Transfer gasless simple amount of token', async () => {
     const amount = 1;

@@ -1,4 +1,3 @@
-
 import * as ex from "@completium/experiment-ts";
 export enum update_for_all_op_types {
     add_for_all = "add_for_all",
@@ -268,7 +267,7 @@ export class token_metadata_value implements ex.ArchetypeType {
             })]);
     }
     equals(v: token_metadata_value): boolean {
-        return (this.token_id.equals(v.token_id) && this.token_id.equals(v.token_id) && this.token_info == v.token_info);
+        return (this.token_id.equals(v.token_id) && this.token_id.equals(v.token_id) && JSON.stringify(this.token_info) == JSON.stringify(v.token_info));
     }
 }
 export type ledger_value = ex.Nat;
@@ -422,7 +421,7 @@ const mint_arg_to_mich = (tow: ex.Address, nbt: ex.Nat): ex.Micheline => {
 const burn_arg_to_mich = (nbt: ex.Nat): ex.Micheline => {
     return nbt.to_mich();
 }
-export class Fa2fungible {
+export class Fa2_fungible {
     address: string | undefined;
     get_address(): ex.Address {
         if (undefined != this.address) {
@@ -437,7 +436,7 @@ export class Fa2fungible {
         throw new Error("Contract not initialised");
     }
     async deploy(owner: ex.Address, permits: ex.Address, params: Partial<ex.Parameters>) {
-        const address = await ex.deploy("./contracts/fa2-fungible.arl", {
+        const address = await ex.deploy("./contracts/fa2_fungible.arl", {
             owner: owner.toString(),
             permits: permits.toString()
         }, params);
@@ -696,4 +695,4 @@ export class Fa2fungible {
         CONTRACT_PAUSED: ex.string_to_mich("\"CONTRACT_PAUSED\"")
     };
 }
-export const fa2fungible = new Fa2fungible();
+export const fa2_fungible = new Fa2_fungible();

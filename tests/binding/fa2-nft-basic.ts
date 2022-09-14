@@ -255,6 +255,19 @@ export class Fa2_basic {
         }
         throw new Error("Contract not initialised");
     }
+    async has_ledger_value(key: ledger_key): Promise<boolean> {
+        if (this.address != undefined) {
+            const storage = await ex.get_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(storage.ledger), key.to_mich(), ledger_key_mich_type);
+            if (data != undefined) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        throw new Error("Contract not initialised");
+    }
     async get_operator_value(key: operator_key): Promise<operator_value | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
@@ -264,6 +277,19 @@ export class Fa2_basic {
             }
             else {
                 return undefined;
+            }
+        }
+        throw new Error("Contract not initialised");
+    }
+    async has_operator_value(key: operator_key): Promise<boolean> {
+        if (this.address != undefined) {
+            const storage = await ex.get_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(storage.operator), key.to_mich(), operator_key_mich_type);
+            if (data != undefined) {
+                return true;
+            }
+            else {
+                return false;
             }
         }
         throw new Error("Contract not initialised");

@@ -281,7 +281,7 @@ export class token_metadata_value implements ex.ArchetypeType {
             })]);
     }
     equals(v: token_metadata_value): boolean {
-        return (this.token_id.equals(v.token_id) && this.token_id.equals(v.token_id) && this.token_info == v.token_info);
+        return (this.token_id.equals(v.token_id) && this.token_id.equals(v.token_id) && JSON.stringify(this.token_info) == JSON.stringify(v.token_info));
     }
 }
 export type ledger_value = ex.Nat;
@@ -577,6 +577,19 @@ export class Fa2multi {
         }
         throw new Error("Contract not initialised");
     }
+    async has_token_metadata_value(key: token_metadata_key): Promise<boolean> {
+        if (this.address != undefined) {
+            const storage = await ex.get_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(storage.token_metadata), key.to_mich(), token_metadata_key_mich_type);
+            if (data != undefined) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        throw new Error("Contract not initialised");
+    }
     async get_ledger_value(key: ledger_key): Promise<ledger_value | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
@@ -586,6 +599,19 @@ export class Fa2multi {
             }
             else {
                 return undefined;
+            }
+        }
+        throw new Error("Contract not initialised");
+    }
+    async has_ledger_value(key: ledger_key): Promise<boolean> {
+        if (this.address != undefined) {
+            const storage = await ex.get_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(storage.ledger), key.to_mich(), ledger_key_mich_type);
+            if (data != undefined) {
+                return true;
+            }
+            else {
+                return false;
             }
         }
         throw new Error("Contract not initialised");
@@ -603,6 +629,19 @@ export class Fa2multi {
         }
         throw new Error("Contract not initialised");
     }
+    async has_operator_value(key: operator_key): Promise<boolean> {
+        if (this.address != undefined) {
+            const storage = await ex.get_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(storage.operator), key.to_mich(), operator_key_mich_type);
+            if (data != undefined) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        throw new Error("Contract not initialised");
+    }
     async get_operator_for_all_value(key: operator_for_all_key): Promise<operator_for_all_value | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
@@ -616,6 +655,19 @@ export class Fa2multi {
         }
         throw new Error("Contract not initialised");
     }
+    async has_operator_for_all_value(key: operator_for_all_key): Promise<boolean> {
+        if (this.address != undefined) {
+            const storage = await ex.get_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(storage.operator_for_all), key.to_mich(), operator_for_all_key_mich_type);
+            if (data != undefined) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        throw new Error("Contract not initialised");
+    }
     async get_metadata_value(key: string): Promise<ex.Bytes | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
@@ -625,6 +677,19 @@ export class Fa2multi {
             }
             else {
                 return undefined;
+            }
+        }
+        throw new Error("Contract not initialised");
+    }
+    async has_metadata_value(key: string): Promise<boolean> {
+        if (this.address != undefined) {
+            const storage = await ex.get_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(storage.metadata), ex.string_to_mich(key), ex.prim_annot_to_mich_type("bytes", []));
+            if (data != undefined) {
+                return true;
+            }
+            else {
+                return false;
             }
         }
         throw new Error("Contract not initialised");

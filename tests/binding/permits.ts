@@ -1,4 +1,5 @@
 import * as ex from "@completium/experiment-ts";
+
 export enum consumer_op_types {
     add = "add",
     remove = "remove"
@@ -74,9 +75,6 @@ export class permits_value implements ex.ArchetypeType {
         return (this.counter.equals(v.counter) && this.counter.equals(v.counter) && this.user_expiry.equals(v.user_expiry) && JSON.stringify(this.user_permits) == JSON.stringify(v.user_permits));
     }
 }
-
-"[[{\"_content\":\"05020000004607070a0000001600006b82198cb179e8306c1bedd08f12dc863f328886020000002407070a000000160000a26828841890d3f3a2a1d4083839c7a882fe05010707000000bb01\"},{\"expiry\":{\"_content\":{\"_content\":\"31556952\"}},\"created_at\":\"2022-09-09T14:55:05.000Z\"}]]"
-"[[{\"_content\":\"12035464014ab9ab0dfcd16f27cbfaedf2329968d7daa9f2462b4867fa311073\"},                                                                                        {\"expiry\":{\"_content\":{\"_content\":\"31556952\"}},\"created_at\":\"2022-09-09T14:55:05.727Z\"}]]"
 export const permits_value_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("nat", ["%counter"]),
     ex.pair_array_to_mich_type([
@@ -284,6 +282,19 @@ export class Permits {
         }
         throw new Error("Contract not initialised");
     }
+    async has_permits_value(key: permits_key): Promise<boolean> {
+        if (this.address != undefined) {
+            const storage = await ex.get_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(storage.permits), key.to_mich(), permits_key_mich_type);
+            if (data != undefined) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        throw new Error("Contract not initialised");
+    }
     async get_default_expiry(): Promise<ex.Nat> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
@@ -300,6 +311,19 @@ export class Permits {
             }
             else {
                 return undefined;
+            }
+        }
+        throw new Error("Contract not initialised");
+    }
+    async has_metadata_value(key: string): Promise<boolean> {
+        if (this.address != undefined) {
+            const storage = await ex.get_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(storage.metadata), ex.string_to_mich(key), ex.prim_annot_to_mich_type("bytes", []));
+            if (data != undefined) {
+                return true;
+            }
+            else {
+                return false;
             }
         }
         throw new Error("Contract not initialised");
