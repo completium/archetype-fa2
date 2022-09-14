@@ -204,7 +204,7 @@ entry check(signer : key, sig : signature, data : bytes) {
   constant {
     pkh      is key_to_address(signer);
     lcounter is permits[pkh] ? the.counter : 0;
-    to_sign  is pack((self_address, lcounter, blake2b(data)));
+    to_sign  is pack(((self_address, self_chain_id), (lcounter, data)));
   }
   require {
     p8: is_not_paused();

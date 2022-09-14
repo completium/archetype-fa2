@@ -6,7 +6,7 @@ const assert = require('assert');
 
 /* Contracts */
 
-import { fa2_fungible, operator_key, operator_param, transfer_destination, transfer_param } from './binding/fa2_fungible';
+import { fa2_fungible, gasless_param, operator_key, operator_param, transfer_destination, transfer_param } from './binding/fa2_fungible';
 import { add, permits, permits_value, user_permit } from './binding/permits';
 
 /* Accounts ----------------------------------------------------------------- */
@@ -379,84 +379,100 @@ describe('[FA2 fungible] Transfers', async () => {
 
 });
 
-/*
 describe('[FA2 fungible] Transfers gasless ', async () => {
   it('Transfer gasless simple amount of token', async () => {
-    const amount = 1;
-    const counter = await getPermitNb(permits, user1.pkh);
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_before === '1', "Invalid amount")
-    assert(balance_user2_before === '0', "Invalid amount")
+    const amount = new Nat(1);
+    const permit = await permits.get_permits_value(user1.get_address())
+    const counter = permit?.counter
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before?.equals(new Nat(1)), "Invalid amount user1")
+    assert(balance_user2_before == undefined, "Invalid amount user2")
 
-    const p = await mkTransferGaslessArgs(user1, user2, permits.address, amount, token_id, counter, user1.name);
+    const tps = [new transfer_param(user1.get_address(),
+      [ new transfer_destination(user2.get_address(), token_id, amount)
+    ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const after_permit_data = await get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await sign(after_permit_data, user1)
+    await fa2_fungible.transfer_gasless([
+        new gasless_param(tps, user1.get_public_key(), sig)
+      ], { as : user3 }
+    )
 
-    await fa2.transfer_gasless({
-      // argMichelson: `{Pair {Pair "${user1.pkh}" {Pair "${user2.pkh}" (Pair ${tokenId} ${amount})}} (Pair "${user1.pubk}" "${p.sig.prefixSig}")}`,
-      arg: {
-        batch: [[[[user1.pkh, [[user2.pkh, token_id, amount]]]], user1.pubk, p.sig.prefixSig]],
-      },
-      as: user3.pkh,
-    });
-
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_after === '0', "Invalid amount")
-    assert(balance_user2_after === '1', "Invalid amount")
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after == undefined, "Invalid amount after user1")
+    assert(balance_user2_after?.equals(new Nat(1)), "Invalid amount after user2")
   });
 
-  it('Transfer a token from another user with wrong a permit should fail', async () => {
-    const amount = 1;
-    const counter = await getPermitNb(permits, user2.pkh);
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_before === '0', "Invalid amount")
-    assert(balance_user2_before === '1', "Invalid amount")
+  it('Transfer a token from another user with wrong permit should fail', async () => {
+    const amount = new Nat(1);
+    const permit = await permits.get_permits_value(user2.get_address())
+    const counter = permit?.counter
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before == undefined, "Invalid amount user1")
+    assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
-    const p = await mkTransferGaslessArgs(user2, user1, permits.address, amount, token_id, counter, user1.name);
+    const tps = [new transfer_param(user2.get_address(),
+      [ new transfer_destination(user1.get_address(), token_id, amount)
+    ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const permit_data = await get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await sign(permit_data, user1)
 
-    const error = `(Pair \"MISSIGNED\"\n        0x${p.tosign})`
+    await expect_to_fail(async () => {
+      await fa2_fungible.transfer_gasless([
+          new gasless_param(tps, user2.get_public_key(), sig)
+        ], { as : user3 }
+      )
+    }, get_missigned_error(permit_data));
 
-    await expectToThrow(async () => {
-      await fa2.transfer_gasless({
-        arg: {
-          batch: [[[[user2.pkh, [[user1.pkh, token_id, amount]]]], user2.pubk, p.sig.prefixSig]],
-        },
-        as: user3.pkh,
-      });
-    }, error);
-
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_after === '0', "Invalid amount")
-    assert(balance_user2_after === '1', "Invalid amount")
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after == undefined, "Invalid amount user1")
+    assert(balance_user2_after?.equals(new Nat(1)), "Invalid amount user2")
   });
 
   it('Transfer gasless', async () => {
-    const amount = 1;
-    const counter = await getPermitNb(permits, user2.pkh);
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_before === '0', "Invalid amount")
-    assert(balance_user2_before === '1', "Invalid amount")
+    const amount = new Nat(1);
+    const permit = await permits.get_permits_value(user2.get_address())
+    const counter = permit?.counter
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before == undefined, "Invalid amount user1")
+    assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
-    const p = await mkTransferGaslessArgs(user2, user1, permits.address, amount, token_id, counter, user2.name);
+    const tps = [new transfer_param(user2.get_address(),
+      [ new transfer_destination(user1.get_address(), token_id, amount)
+    ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const after_permit_data = await get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await sign(after_permit_data, user2)
+    await fa2_fungible.transfer_gasless([
+        new gasless_param(tps, user2.get_public_key(), sig)
+      ], { as : user3 }
+    )
 
-    await fa2.transfer_gasless({
-      arg: {
-        batch: [[[[user2.pkh, [[user1.pkh, token_id, amount]]]], user2.pubk, p.sig.prefixSig]],
-      },
-      as: user3.pkh,
-    });
-
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_after === '1', "Invalid amount")
-    assert(balance_user2_after === '0', "Invalid amount")
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after?.equals(new Nat(1)), "Invalid amount after user1")
+    assert(balance_user2_after == undefined, "Invalid amount after user2")
   });
 
 });
 
+/*
 describe('[FA2 fungible] Consume permit', async () => {
 
   it('Set global expiry with too big value should fail', async () => {
