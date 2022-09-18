@@ -1,4 +1,4 @@
-import { Account, Bytes, expect_to_fail, get_account, Key, Nat, Option, option_to_mich_type, Or, pack, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, set_mockup, set_mockup_now, set_quiet, sign, Signature, string_to_mich, transfer } from '@completium/experiment-ts'
+import { Account, Bytes, expect_to_fail, get_account, Key, Nat, Option, option_to_mich_type, Or, pack, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, set_mockup, set_mockup_now, set_quiet, sign, Signature, string_to_mich, transfer, blake2b } from '@completium/experiment-ts'
 
 import { get_packed_transfer_params, get_transfer_permit_data } from './utils'
 
@@ -41,9 +41,9 @@ const expiry = new Nat(31556952)
 const wrong_sig = new Signature("edsigu3QDtEZeSCX146136yQdJnyJDfuMRsDxiCgea3x7ty2RTwDdPpgioHWJUe86tgTCkeD2u16Az5wtNFDdjGyDpb7MiyU3fn");
 const wrong_packed_transfer_params = new Bytes('9aabe91d035d02ffb550bb9ea6fe19970f6fb41b5e69459a60b1ae401192a2dc');
 
-const get_ref_user_permits = (counter : Nat, packed_data : Bytes, expiry : Nat, now : Date) => {
+const get_ref_user_permits = (counter : Nat, data : Bytes, expiry : Nat, now : Date) => {
   return new permits_value(counter, Option.None<Nat>(), [[
-    packed_data,
+    blake2b(data),
     new user_permit(Option.Some<Nat>(expiry), new Date(now.getTime() - now.getMilliseconds()))
   ]])
 }
@@ -192,7 +192,7 @@ describe('[FA2 fungible] Add permit', async () => {
       alice_permit_counter);
 
     await expect_to_fail(async () => {
-      const sig = await sign(permit_data, alice)
+      const sig = await alice.sign(permit_data)
       await permits.permit(new Key(alice.pubk), sig, wrong_packed_transfer_params, { as : bob })
     }, get_missigned_error(wrong_permit_data));
   });
@@ -208,7 +208,7 @@ describe('[FA2 fungible] Add permit', async () => {
       alice_permit_counter);
 
     await expect_to_fail(async () => {
-      const sig = await sign(permit_data, alice)
+      const sig = await alice.sign(permit_data)
       await permits.permit(new Key(bob.pubk), sig, packed_transfer_params, { as : bob })
     }, get_missigned_error(permit_data));
   });
@@ -221,7 +221,7 @@ describe('[FA2 fungible] Add permit', async () => {
       packed_transfer_params,
       permits.get_address(),
       alice_permit_counter);
-    const sig = await sign(permit_data, alice)
+    const sig = await alice.sign(permit_data)
     await permits.permit(new Key(alice.pubk), sig, packed_transfer_params, { as : bob })
 
     const added_permit = await permits.get_permits_value(alice.get_address())
@@ -242,7 +242,7 @@ describe('[FA2 fungible] Add permit', async () => {
       packed_transfer_params,
       permits.get_address(),
       alice_permit_counter);
-    const sig = await sign(permit_data, alice)
+    const sig = await alice.sign(permit_data)
     await permits.permit(new Key(alice.pubk), sig, packed_transfer_params, { as : bob })
 
     const added_permit = await permits.get_permits_value(alice.get_address())
@@ -259,7 +259,7 @@ describe('[FA2 fungible] Add permit', async () => {
       packed_transfer_params,
       permits.get_address(),
       alice_permit_counter);
-    const sig = await sign(permit_data, alice)
+    const sig = await alice.sign(permit_data)
     await permits.permit(new Key(alice.pubk), sig, packed_transfer_params, { as : bob })
 
     const added_permit = await permits.get_permits_value(alice.get_address())
@@ -279,7 +279,7 @@ describe('[FA2 fungible] Add permit', async () => {
       packed_transfer_params,
       permits.get_address(),
       alice_permit_counter);
-    const sig_after = await sign(after_permit_data, alice)
+    const sig_after = await alice.sign(after_permit_data)
 
     await permits.permit(new Key(alice.pubk), sig_after, after_packed_transfer_params, { as : bob })
 
@@ -397,7 +397,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
       packed_transfer_params,
       permits.get_address(),
       counter);
-    const sig = await sign(after_permit_data, user1)
+    const sig = await user1.sign(after_permit_data)
     await fa2_fungible.transfer_gasless([
         new gasless_param(tps, user1.get_public_key(), sig)
       ], { as : user3 }
@@ -426,7 +426,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
       packed_transfer_params,
       permits.get_address(),
       counter);
-    const sig = await sign(permit_data, user1)
+    const sig = await user1.sign(permit_data)
 
     await expect_to_fail(async () => {
       await fa2_fungible.transfer_gasless([
@@ -458,7 +458,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
       packed_transfer_params,
       permits.get_address(),
       counter);
-    const sig = await sign(after_permit_data, user2)
+    const sig = await user2.sign(after_permit_data)
     await fa2_fungible.transfer_gasless([
         new gasless_param(tps, user2.get_public_key(), sig)
       ], { as : user3 }
@@ -472,457 +472,334 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
 
 });
 
-/*
+
 describe('[FA2 fungible] Consume permit', async () => {
 
   it('Set global expiry with too big value should fail', async () => {
-    await expectToThrow(async () => {
-      await permits.set_expiry({
-        argMichelson: `(Pair (Some 999999999999999999999999999999999999999) (None))`,
-        as: alice.pkh,
-      });
-    }, errors.EXPIRY_TOO_BIG);
+    await expect_to_fail(async () => {
+      await permits.set_expiry(
+        Option.Some<Nat>(new Nat('999999999999999999999999999999999999999')),
+        Option.None(),
+        { as : alice }
+      );
+    }, permits.errors.r2);
   });
 
   it('Simple transfer with permit', async () => {
-    const amount = 1;
-    const counter = await getPermitNb(permits, user1.pkh);
+    const amount = new Nat(1);
+    const permit = await permits.get_permits_value(user1.get_address())
+    const counter = permit?.counter
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before?.equals(new Nat(1)), "Invalid amount user1")
+    assert(balance_user2_before == undefined, "Invalid amount user2")
 
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_before === '1', "Invalid amount")
-    assert(balance_user2_before === '0', "Invalid amount")
+    const tps = [new transfer_param(user1.get_address(),
+      [ new transfer_destination(user2.get_address(), token_id, amount)
+    ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const permit_data = await get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await user1.sign(permit_data)
 
-    const permit = await mkTransferPermit(
-      user1,
-      user2,
-      permits.address,
-      amount,
-      token_id,
-      counter
-    );
+    await permits.permit(user1.get_public_key(), sig, packed_transfer_params, { as : bob })
 
-    await permits.permit({
-      argMichelson: `(Pair "${user1.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
-      as: bob.pkh,
-    });
+    const permit_after = await permits.get_permits_value(user1.get_address())
+    assert(permit_after?.user_permits.length == 1, "Invalid user permits")
 
-    await fa2.transfer({
-      arg: {
-        txs: [[user1.pkh, [[user2.pkh, token_id, 1]]]],
-      },
-      as: user3.pkh,
-    });
+    await fa2_fungible.transfer(tps, { as : user3 })
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_after === '0', "Invalid amount")
-    assert(balance_user2_after === '1', "Invalid amount")
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after == undefined, "Invalid amount user1")
+    assert(balance_user2_after?.equals(new Nat(1)), "Invalid amount user2")
   });
 
   it('Set expiry for an existing permit with too big value should fail', async () => {
-    const amount = 1;
-    const counter = await getPermitNb(permits, user2.pkh);
+    const amount = new Nat(1);
+    const permit = await permits.get_permits_value(user2.get_address())
+    const counter = permit?.counter
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before == undefined, "Invalid amount user1")
+    assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_before === '0', "Invalid amount")
-    assert(balance_user2_before === '1', "Invalid amount")
+    const tps = [new transfer_param(user2.get_address(),
+      [ new transfer_destination(user1.get_address(), token_id, amount)
+    ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const permit_data = await get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await user2.sign(permit_data)
 
-    const permit = await mkTransferPermit(
-      user2,
-      user1,
-      permits.address,
-      amount,
-      token_id,
-      counter
-    );
+    await permits.permit(user2.get_public_key(), sig, packed_transfer_params, { as : user2 })
 
-    await permits.permit({
-      argMichelson: `(Pair "${user2.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
-      as: user2.pkh,
-    });
-
-    await expectToThrow(async () => {
-      await permits.set_expiry({
-        argMichelson: `(Pair (Some 999999999999999999999999999999999999999) (Some 0x${permit.hash}))`,
-        as: user2.pkh,
-      });
-    }, errors.EXPIRY_TOO_BIG);
+    await expect_to_fail(async () => {
+      await permits.set_expiry(
+        Option.Some<Nat>(new Nat('999999999999999999999999999999999999999')),
+        Option.Some<Bytes>(permit_data),
+        { as : alice }
+      )
+    }, permits.errors.r2);
   });
 
   it('Set expiry with a correct value should succeed', async () => {
-    const amount = 1;
-    const counter = await getPermitNb(permits, user2.pkh);
+    const amount = new Nat(1);
+    const permit = await permits.get_permits_value(user2.get_address())
+    const counter = permit?.counter
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before == undefined, "Invalid amount user1")
+    assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_before = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_before === '0', "Invalid amount")
-    assert(balance_user2_before === '1', "Invalid amount")
+    const tps = [new transfer_param(user2.get_address(),
+      [ new transfer_destination(user1.get_address(), token_id, amount)
+    ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const permit_data = await get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await user2.sign(permit_data)
 
-    const permit = await mkTransferPermit(
-      user2,
-      user1,
-      permits.address,
-      amount,
-      token_id,
-      counter
-    );
+    set_mockup_now(now)
 
-    setMockupNow(timestamp_now)
+    await permits.permit(user2.get_public_key(), sig, packed_transfer_params, { as : user2 })
 
-    await permits.permit({
-      argMichelson: `(Pair "${user2.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
-      as: user2.pkh,
-    });
+    const expiry = new Nat(3600);
 
-    const expiry = 3600;
+    await permits.set_expiry(Option.Some(expiry), Option.Some(packed_transfer_params), { as : user2 })
 
-    await permits.set_expiry({
-      argMichelson: `(Pair (Some ${expiry}) (Some 0x${permit.hash}))`,
-      as: user2.pkh,
-    });
+    //set_mockup_now(new Date(now.setSeconds(now.getSeconds() + expiry.to_big_number().toNumber() + 10)))
 
-    setMockupNow(timestamp_now + expiry + 10)
-    await expectToThrow(async () => {
-      await fa2.transfer({
-        arg: {
-          txs: [[user2.pkh, [[user1.pkh, token_id, 1]]]],
-        },
-        as: user3.pkh,
-      });
-    }, errors.PERMIT_EXPIRED);
+    //await expect_to_fail(async () => {
+    //  await fa2_fungible.transfer(tps, { as: user3 });
+    //}, permits.errors.p7);
 
-    setMockupNow(timestamp_now)
-    await fa2.transfer({
-      arg: {
-        txs: [[user2.pkh, [[user1.pkh, token_id, 1]]]],
-      },
-      as: user3.pkh,
-    });
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    const balance_user2_after = await getBalanceLedger(fa2, user2.pkh);
-    assert(balance_user1_after === '1', "Invalid amount")
-    assert(balance_user2_after === '0', "Invalid amount")
+    set_mockup_now(now)
+
+    await fa2_fungible.transfer(tps, { as : user3 });
+
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after?.equals(new Nat(1)), "Invalid amount user1")
+    assert(balance_user2_after == undefined, "Invalid amount user2")
   });
 
-  it('Set expiry with 0 (permit get deleted) should succeed', async () => {
-    const amount = 12;
-    const counter = await getPermitNb(permits, carl.pkh);
+  it('Set expiry to 0 (permit gets deleted) should succeed', async () => {
+    const amount = new Nat(12);
+    const permit = await permits.get_permits_value(carl.get_address())
+    assert(permit == undefined, "Carl's permit should be undefined")
+    const counter = new Nat(0)
 
-    const permit = await mkTransferPermit(
-      carl,
-      bob,
-      permits.address,
-      amount,
-      token_id,
-      counter
-    );
+    const tps = [new transfer_param(carl.get_address(),
+      [ new transfer_destination(bob.get_address(), token_id, amount)
+    ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const permit_data = await get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
 
-    const initialPermit = await getPermit(permits, carl.pkh);
-    assert(initialPermit == null);
+    const sig = await carl.sign(permit_data)
+    await permits.permit(carl.get_public_key(), sig, packed_transfer_params, { as : carl })
 
-    await permits.permit({
-      argMichelson: `(Pair "${carl.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
-      as: carl.pkh,
-    });
+    const added_permit = await permits.get_permits_value(carl.get_address())
+    assert(added_permit?.equals(get_ref_user_permits(new Nat(1), packed_transfer_params, expiry, now)))
 
-    const addedPermit = await getPermit(permits, carl.pkh);
-    const addedPermitValue = jsonMichelineToExpr(addedPermit)
-    const addedPermitRef = `(Pair 1 None {Elt 0x976a3d63af06ce34e879432448471fde168fb92099514e6168467445273a82f6 (Pair (Some 31556952) "${GetIsoStringFromTimestamp(timestamp_now + 1)}")})`
-    assert(addedPermitValue == addedPermitRef, "Invalid Value")
+    await permits.set_expiry(Option.Some(new Nat(0)), Option.Some(packed_transfer_params), { as : carl })
 
-    await permits.set_expiry({
-      argMichelson: `(Pair (Some 0) (Some 0x${permit.hash}))`,
-      as: carl.pkh,
-    });
+    const final_permit = await permits.get_permits_value(carl.get_address())
 
-    const finalPermit = await getPermit(permits, carl.pkh);
-    const finalPermitValue = jsonMichelineToExpr(finalPermit)
-    const finalPermitRef = '(Pair 1 None {})'
-    assert(finalPermitValue == finalPermitRef, "Invalid Value")
+    assert(final_permit?.equals(new permits_value(new Nat(1), Option.None<Nat>(), [])))
   });
 
 });
 
 describe('[FA2 fungible] Set metadata', async () => {
   it('Set metadata with empty content should succeed', async () => {
-    const metadata_before = await getMetadata(fa2, "key");
-    assert(metadata_before == null);
+    const metadata_before = await fa2_fungible.get_metadata_value("key")
+    assert(metadata_before == undefined);
 
-    await fa2.set_metadata({
-      arg: {
-        k: 'key',
-        d: '0x'
-      },
-      as: alice.pkh,
-    });
+    await fa2_fungible.set_metadata("key", Option.Some(new Bytes("")), { as : alice })
 
-    const metadata_after = await getMetadata(fa2, "key");
-    assert(metadata_after == '');
+    const metadata_after = await fa2_fungible.get_metadata_value("key")
+    assert(metadata_after?.equals(new Bytes("")));
   });
 
   it('Set metadata called by not owner should fail', async () => {
-    await expectToThrow(async () => {
-      await fa2.set_metadata({
-        arg: {
-          k: 'key',
-          d: '0x'
-        },
-        as: bob.pkh,
-      });
-    }, errors.INVALID_CALLER);
+    await expect_to_fail(async () => {
+      await fa2_fungible.set_metadata("key", Option.Some(new Bytes("")), { as : bob })
+    }, fa2_fungible.errors.INVALID_CALLER);
   });
 
   it('Set metadata with valid content should succeed', async () => {
-    const data = '697066733a2f2f516d617635756142437a4d77377871446f55364d444534743473695855484e4737664a68474c746f79774b35694a';
-    const metadata_before = await getMetadata(fa2, "key");
-    assert(metadata_before == '');
+    const data = new Bytes('697066733a2f2f516d617635756142437a4d77377871446f55364d444534743473695855484e4737664a68474c746f79774b35694a');
+    const metadata_before = await fa2_fungible.get_metadata_value("key")
+    assert(metadata_before?.equals(new Bytes("")), "Invalid metadata before");
 
-    await fa2.set_metadata({
-      arg: {
-        k: 'key',
-        d: `0x${data}`
-      },
-      as: alice.pkh,
-    });
+    await fa2_fungible.set_metadata("key", Option.Some(data), { as : alice })
 
-    const metadata_after = await getMetadata(fa2, "key");
-    assert(metadata_after == `${data}`);
+    const metadata_after = await fa2_fungible.get_metadata_value("key")
+    assert(metadata_after?.equals(data));
   });
 });
 
 describe('[FA2 fungible] Burn', async () => {
   it('Burn token should succeed', async () => {
-    const balance_user1_before = await getBalanceLedger(fa2, user1.pkh);
-    assert(balance_user1_before === '1', "Invalid amount")
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    assert(balance_user1_before?.equals(new Nat(1)), "Invalid amount user1")
 
-    await fa2.burn({
-      arg: {
-        nbt: 1
-      },
-      as: user1.pkh,
-    });
+    await fa2_fungible.burn(new Nat(1), { as: user1 });
 
-    const balance_user1_after = await getBalanceLedger(fa2, user1.pkh);
-    assert(balance_user1_after === '0', "Invalid amount")
-
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    assert(balance_user1_after === undefined, "Invalid amount")
   });
 
   it('Burn without tokens should fail', async () => {
-    await expectToThrow(async () => {
-      await fa2.burn({
-        arg: {
-          nbt: 1
-        },
-        as: user1.pkh,
-      });
-    }, errors.FA2_INSUFFICIENT_BALANCE);
+    await expect_to_fail(async () => {
+      await fa2_fungible.burn(new Nat(1), { as: user1 });
+    }, fa2_fungible.errors.FA2_INSUFFICIENT_BALANCE);
   });
 
   it('Burn tokens with a partial amount of tokens should succeed', async () => {
-    const amount = 500
-    const balance_user1_before = await getBalanceLedger(fa2, carl.pkh);
+    const amount = new Nat(500)
+    const balance_user1_before = await fa2_fungible.get_ledger_value(carl.get_address())
 
-    await fa2.burn({
-      arg: {
-        nbt: amount,
-      },
-      as: carl.pkh,
-    });
+    await fa2_fungible.burn(amount, { as: carl });
 
-    const balance_user1_after = await getBalanceLedger(fa2, carl.pkh);
-    assert(parseInt(balance_user1_before) - amount == balance_user1_after, "Invalid Value")
+    const balance_user1_after = await fa2_fungible.get_ledger_value(carl.get_address())
+    assert(balance_user1_after?.plus(amount).equals(balance_user1_before ? balance_user1_before : new Nat(0)), "Invalid value")
   });
 
   it('Burn tokens with more tokens owned should failed', async () => {
-    const balance_carl_before = await getBalanceLedger(fa2, carl.pkh);
-    assert(balance_carl_before === '500', "Invalid amount")
+    const balance_carl_before = await fa2_fungible.get_ledger_value(carl.get_address())
+    assert(balance_carl_before?.equals(new Nat(500)), "Invalid amount")
 
-    await expectToThrow(async () => {
-      await fa2.burn({
-        arg: {
-          nbt: 1000,
-        },
-        as: carl.pkh,
-      });
-    }, errors.FA2_INSUFFICIENT_BALANCE);
+    await expect_to_fail(async () => {
+      await fa2_fungible.burn(new Nat(1000), { as: carl });
+    }, fa2_fungible.errors.FA2_INSUFFICIENT_BALANCE);
 
-    const balance_carl_after = await getBalanceLedger(fa2, carl.pkh);
-    assert(balance_carl_after === '500', "Invalid amount")
+    const balance_carl_after = await fa2_fungible.get_ledger_value(carl.get_address())
+    assert(balance_carl_after?.equals(new Nat(500)), "Invalid amount")
   });
 
 });
 
 describe('[FA2 fungible] Pause', async () => {
   it('Set FA2 on pause should succeed', async () => {
-    await fa2.pause({
-      as: alice.pkh,
-    });
-    const storage = await fa2.getStorage();
-    assert(storage.paused == true);
+    await fa2_fungible.pause({ as: alice });
+    const is_paused = await fa2_fungible.get_paused()
+    assert(is_paused);
   });
   it('Set Permits on pause should succeed', async () => {
-    await permits.pause({
-      as: alice.pkh,
-    });
-    const storage = await permits.getStorage();
-    assert(storage.paused == true);
+    await permits.pause({ as: alice });
+    const is_paused = await fa2_fungible.get_paused()
+    assert(is_paused);
   });
 
   it('Minting is not possible when contract is paused should fail', async () => {
-    await expectToThrow(async () => {
-      await fa2.mint({
-        arg: {
-          tow: alice.pkh,
-          nbt: 1000,
-        },
-        as: alice.pkh,
-      });
-    }, errors.CONTRACT_PAUSED);
+    await expect_to_fail(async () => {
+      await fa2_fungible.mint(alice.get_address(), new Nat(1000), { as : alice })
+    }, fa2_fungible.errors.CONTRACT_PAUSED);
   });
 
   it('Update operators is not possible when contract is paused should fail', async () => {
-    await expectToThrow(async () => {
-      await fa2.update_operators({
-        argMichelson: `{Left (Pair "${alice.pkh}" "${bob.pkh}" ${token_id})}`,
-        as: alice.pkh,
-      });
-    }, errors.CONTRACT_PAUSED);
+    await expect_to_fail(async () => {
+      await fa2_fungible.update_operators([
+        Or.Left(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
+      ], { as : alice })
+    }, fa2_fungible.errors.CONTRACT_PAUSED);
   });
 
   it('Add permit is not possible when contract is paused should fail', async () => {
-    const amount = 1;
-    const counter = await getPermitNb(permits, alice.pkh);
+    const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
+    const tps = [new transfer_param(alice.get_address(), [ new transfer_destination(bob.get_address(), token_id, amount) ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const permit_data = get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      alice_permit_counter);
+    const sig = await alice.sign(permit_data)
 
-    const permit = await mkTransferPermit(
-      alice,
-      bob,
-      permits.address,
-      amount,
-      token_id,
-      counter
-    );
-    await expectToThrow(async () => {
-      await permits.permit({
-        argMichelson: `(Pair "${alice.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`,
-        as: bob.pkh,
-      });
-    }, errors.CONTRACT_PAUSED);
+    await expect_to_fail(async () => {
+      await permits.permit(alice.get_public_key(), sig, packed_transfer_params, { as : alice });
+    }, fa2_fungible.errors.CONTRACT_PAUSED);
   });
 
   it('Transfer is not possible when contract is paused should fail', async () => {
-    await expectToThrow(async () => {
-      await fa2.transfer({
-        arg: {
-          txs: [[alice.pkh, [[bob.pkh, token_id, 123]]]],
-        },
-        as: alice.pkh,
-      });
-    }, errors.CONTRACT_PAUSED);
+    await expect_to_fail(async () => {
+      await fa2_fungible.transfer([new transfer_param(
+        user1.get_address(),
+        [new transfer_destination(user2.get_address(), token_id, new Nat(1))])],
+        { as: user1 });
+    }, fa2_fungible.errors.CONTRACT_PAUSED);
   });
 
   it('Set metadata is not possible when contract is paused should fail', async () => {
-    await expectToThrow(async () => {
-      const bytes =
-        '0x05070707070a00000016016a5569553c34c4bfe352ad21740dea4e2faad3da000a00000004f5f466ab070700000a000000209aabe91d035d02ffb550bb9ea6fe19970f6fb41b5e69459a60b1ae401192a2dc';
-      const argM = `(Pair "" (Some ${bytes}))`;
-      await fa2.set_metadata({
-        argMichelson: argM,
-        as: alice.pkh,
-      });
-    }, errors.CONTRACT_PAUSED);
+    await expect_to_fail(async () => {
+      await fa2_fungible.set_metadata("key", Option.Some(new Bytes("")), { as : alice })
+    }, fa2_fungible.errors.CONTRACT_PAUSED);
   });
 
   it('Set expiry is not possible when contract is paused should fail', async () => {
-    const amount = 11;
-    const expiry = 8;
-    const counter = 1;
+    const tps = [new transfer_param(alice.get_address(), [ new transfer_destination(bob.get_address(), token_id, amount) ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
 
-    const permit = await mkTransferPermit(
-      carl,
-      bob,
-      permits.address,
-      amount,
-      token_id,
-      counter
-    );
-
-    await expectToThrow(async () => {
-      await permits.set_expiry({
-        argMichelson: `(Pair (Some ${expiry}) (Some 0x${permit.hash}))`,
-        as: alice.pkh,
-      });
-    }, errors.CONTRACT_PAUSED);
+    await expect_to_fail(async () => {
+      await permits.set_expiry(Option.Some(new Nat(0)), Option.Some(packed_transfer_params), { as : alice })
+    }, fa2_fungible.errors.CONTRACT_PAUSED);
   });
 
   it('Burn is not possible when contract is paused should fail', async () => {
-    await expectToThrow(async () => {
-      await fa2.burn({
-        arg: {
-          nbt: 1
-        },
-        as: alice.pkh,
-      });
-    }, errors.CONTRACT_PAUSED);
+    await expect_to_fail(async () => {
+      await fa2_fungible.burn(new Nat(1), { as : alice })
+    }, fa2_fungible.errors.CONTRACT_PAUSED);
   });
 
   it('Unpause by not owner should fail', async () => {
-    await expectToThrow(async () => {
-      await fa2.unpause({
-        as: bob.pkh,
-      });
-    }, errors.INVALID_CALLER);
+    await expect_to_fail(async () => {
+      await fa2_fungible.unpause({ as: bob });
+    }, fa2_fungible.errors.INVALID_CALLER);
   });
 
   it('Unpause by owner should succeed', async () => {
-    await fa2.unpause({
-      as: alice.pkh,
-    });
-    await permits.unpause({
-      as: alice.pkh,
-    });
+    await fa2_fungible.unpause({ as: alice });
+    await permits.unpause({ as: alice });
   });
 });
 
 describe('[FA2 fungible] Transfer ownership', async () => {
 
   it('Transfer ownership when contract is paused should succeed', async () => {
-    let storage = await fa2.getStorage();
-    assert(storage.owner == alice.pkh);
-    await fa2.declare_ownership({
-      argMichelson: `"${alice.pkh}"`,
-      as: alice.pkh,
-    });
-    storage = await fa2.getStorage();
-    assert(storage.owner == alice.pkh);
+    const owner = await fa2_fungible.get_owner()
+    assert(owner.equals(alice.get_address()));
+    await fa2_fungible.declare_ownership(alice.get_address(), { as: alice });
+    const new_owner = await fa2_fungible.get_owner()
+    assert(owner.equals(new_owner));
   });
 
   it('Transfer ownership as non owner should fail', async () => {
-    await expectToThrow(async () => {
-      await fa2.declare_ownership({
-        argMichelson: `"${bob.pkh}"`,
-        as: bob.pkh,
-      });
-    }, errors.INVALID_CALLER);
+    await expect_to_fail(async () => {
+      await fa2_fungible.declare_ownership(bob.get_address(), { as: bob });
+    }, fa2_fungible.errors.INVALID_CALLER);
   });
 
   it('Transfer ownership as owner should succeed', async () => {
-    let storage = await fa2.getStorage();
-    assert(storage.owner == alice.pkh);
-    await fa2.declare_ownership({
-      argMichelson: `"${bob.pkh}"`,
-      as: alice.pkh,
-    });
-    await fa2.claim_ownership({
-      as: bob.pkh,
-    });
-    storage = await fa2.getStorage();
-    assert(storage.owner == bob.pkh);
+    const owner = await fa2_fungible.get_owner()
+    assert(owner.equals(alice.get_address()));
+    await fa2_fungible.declare_ownership(bob.get_address(), { as: alice })
+    await fa2_fungible.claim_ownership({ as: bob });
+    const new_owner = await fa2_fungible.get_owner()
+    assert(new_owner.equals(bob.get_address()));
   });
 });
 
-
+/*
 describe('[FA2 fungible] Balance of', async () => {
 
   it('Simple balance of', async () => {

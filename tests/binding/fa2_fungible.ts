@@ -421,6 +421,14 @@ const mint_arg_to_mich = (tow: ex.Address, nbt: ex.Nat): ex.Micheline => {
 const burn_arg_to_mich = (nbt: ex.Nat): ex.Micheline => {
     return nbt.to_mich();
 }
+const balance_of_arg_to_mich = (balance_of_arg: [
+    Array<balance_of_request>,
+    ex.Entrypoint
+]): ex.Micheline => {
+    return ex.pair_to_mich([ex.list_to_mich(balance_of_arg[0], x => {
+            return x.to_mich();
+        }), balance_of_arg[1].to_mich()]);
+}
 export class Fa2_fungible {
     address: string | undefined;
     get_address(): ex.Address {
@@ -437,83 +445,106 @@ export class Fa2_fungible {
     }
     async deploy(owner: ex.Address, permits: ex.Address, params: Partial<ex.Parameters>) {
         const address = await ex.deploy("./contracts/fa2_fungible.arl", {
-            owner: owner.toString(),
-            permits: permits.toString()
+            owner: owner.to_mich(),
+            permits: permits.to_mich()
         }, params);
         this.address = address;
     }
     async declare_ownership(candidate: ex.Address, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "declare_ownership", declare_ownership_arg_to_mich(candidate), params);
+            return await ex.call(this.address, "declare_ownership", declare_ownership_arg_to_mich(candidate), params);
         }
+        throw new Error("Contract not initialised");
     }
     async claim_ownership(params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "claim_ownership", claim_ownership_arg_to_mich(), params);
+            return await ex.call(this.address, "claim_ownership", claim_ownership_arg_to_mich(), params);
         }
+        throw new Error("Contract not initialised");
     }
     async pause(params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "pause", pause_arg_to_mich(), params);
+            return await ex.call(this.address, "pause", pause_arg_to_mich(), params);
         }
+        throw new Error("Contract not initialised");
     }
     async unpause(params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "unpause", unpause_arg_to_mich(), params);
+            return await ex.call(this.address, "unpause", unpause_arg_to_mich(), params);
         }
+        throw new Error("Contract not initialised");
     }
     async set_metadata(k: string, d: ex.Option<ex.Bytes>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "set_metadata", set_metadata_arg_to_mich(k, d), params);
+            return await ex.call(this.address, "set_metadata", set_metadata_arg_to_mich(k, d), params);
         }
+        throw new Error("Contract not initialised");
     }
     async set_token_metadata(tid: ex.Nat, tdata: Array<[
         string,
         ex.Bytes
     ]>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "set_token_metadata", set_token_metadata_arg_to_mich(tid, tdata), params);
+            return await ex.call(this.address, "set_token_metadata", set_token_metadata_arg_to_mich(tid, tdata), params);
         }
+        throw new Error("Contract not initialised");
     }
     async set_permits(p: ex.Address, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "set_permits", set_permits_arg_to_mich(p), params);
+            return await ex.call(this.address, "set_permits", set_permits_arg_to_mich(p), params);
         }
+        throw new Error("Contract not initialised");
     }
     async update_operators(upl: Array<ex.Or<operator_param, operator_param>>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "update_operators", update_operators_arg_to_mich(upl), params);
+            return await ex.call(this.address, "update_operators", update_operators_arg_to_mich(upl), params);
         }
+        throw new Error("Contract not initialised");
     }
     async update_operators_for_all(upl: Array<update_for_all_op>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "update_operators_for_all", update_operators_for_all_arg_to_mich(upl), params);
+            return await ex.call(this.address, "update_operators_for_all", update_operators_for_all_arg_to_mich(upl), params);
         }
+        throw new Error("Contract not initialised");
     }
     async do_transfer(txs: Array<transfer_param>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "do_transfer", do_transfer_arg_to_mich(txs), params);
+            return await ex.call(this.address, "do_transfer", do_transfer_arg_to_mich(txs), params);
         }
+        throw new Error("Contract not initialised");
     }
     async transfer_gasless(batch: Array<gasless_param>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "transfer_gasless", transfer_gasless_arg_to_mich(batch), params);
+            return await ex.call(this.address, "transfer_gasless", transfer_gasless_arg_to_mich(batch), params);
         }
+        throw new Error("Contract not initialised");
     }
     async transfer(txs: Array<transfer_param>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "transfer", transfer_arg_to_mich(txs), params);
+            return await ex.call(this.address, "transfer", transfer_arg_to_mich(txs), params);
         }
+        throw new Error("Contract not initialised");
     }
     async mint(tow: ex.Address, nbt: ex.Nat, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "mint", mint_arg_to_mich(tow, nbt), params);
+            return await ex.call(this.address, "mint", mint_arg_to_mich(tow, nbt), params);
         }
+        throw new Error("Contract not initialised");
     }
     async burn(nbt: ex.Nat, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "burn", burn_arg_to_mich(nbt), params);
+            return await ex.call(this.address, "burn", burn_arg_to_mich(nbt), params);
         }
+        throw new Error("Contract not initialised");
+    }
+    async balance_of(balance_of_arg: [
+        Array<balance_of_request>,
+        ex.Entrypoint
+    ], params: Partial<ex.Parameters>): Promise<any> {
+        if (this.address != undefined) {
+            return await ex.call(this.address, "balance_of", balance_of_arg_to_mich(balance_of_arg), params);
+        }
+        throw new Error("Contract not initialised");
     }
     async get_owner(): Promise<ex.Address> {
         if (this.address != undefined) {

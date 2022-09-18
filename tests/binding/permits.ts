@@ -1,5 +1,4 @@
 import * as ex from "@completium/experiment-ts";
-
 export enum consumer_op_types {
     add = "add",
     remove = "remove"
@@ -178,64 +177,75 @@ export class Permits {
     }
     async deploy(owner: ex.Address, params: Partial<ex.Parameters>) {
         const address = await ex.deploy("./contracts/permits.arl", {
-            owner: owner.toString()
+            owner: owner.to_mich()
         }, params);
         this.address = address;
     }
     async declare_ownership(candidate: ex.Address, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "declare_ownership", declare_ownership_arg_to_mich(candidate), params);
+            return await ex.call(this.address, "declare_ownership", declare_ownership_arg_to_mich(candidate), params);
         }
+        throw new Error("Contract not initialised");
     }
     async claim_ownership(params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "claim_ownership", claim_ownership_arg_to_mich(), params);
+            return await ex.call(this.address, "claim_ownership", claim_ownership_arg_to_mich(), params);
         }
+        throw new Error("Contract not initialised");
     }
     async pause(params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "pause", pause_arg_to_mich(), params);
+            return await ex.call(this.address, "pause", pause_arg_to_mich(), params);
         }
+        throw new Error("Contract not initialised");
     }
     async unpause(params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "unpause", unpause_arg_to_mich(), params);
+            return await ex.call(this.address, "unpause", unpause_arg_to_mich(), params);
         }
+        throw new Error("Contract not initialised");
     }
     async set_metadata(k: string, d: ex.Option<ex.Bytes>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "set_metadata", set_metadata_arg_to_mich(k, d), params);
+            return await ex.call(this.address, "set_metadata", set_metadata_arg_to_mich(k, d), params);
         }
+        throw new Error("Contract not initialised");
     }
     async manage_consumer(op: consumer_op, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "manage_consumer", manage_consumer_arg_to_mich(op), params);
+            return await ex.call(this.address, "manage_consumer", manage_consumer_arg_to_mich(op), params);
         }
+        throw new Error("Contract not initialised");
     }
     async set_expiry(iv: ex.Option<ex.Nat>, ip: ex.Option<ex.Bytes>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "set_expiry", set_expiry_arg_to_mich(iv, ip), params);
+            return await ex.call(this.address, "set_expiry", set_expiry_arg_to_mich(iv, ip), params);
         }
+        throw new Error("Contract not initialised");
     }
     async set_default_expiry(v: ex.Nat, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "set_default_expiry", set_default_expiry_arg_to_mich(v), params);
+            return await ex.call(this.address, "set_default_expiry", set_default_expiry_arg_to_mich(v), params);
         }
+        throw new Error("Contract not initialised");
     }
     async permit(pk: ex.Key, sig: ex.Signature, data: ex.Bytes, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "permit", permit_arg_to_mich(pk, sig, data), params);
+            return await ex.call(this.address, "permit", permit_arg_to_mich(pk, sig, data), params);
         }
+        throw new Error("Contract not initialised");
     }
     async consume(signer: ex.Address, data: ex.Bytes, err: string, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "consume", consume_arg_to_mich(signer, data, err), params);
+            return await ex.call(this.address, "consume", consume_arg_to_mich(signer, data, err), params);
         }
+        throw new Error("Contract not initialised");
     }
     async check(signer: ex.Key, sig: ex.Signature, data: ex.Bytes, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "check", check_arg_to_mich(signer, sig, data), params);
+            return await ex.call(this.address, "check", check_arg_to_mich(signer, sig, data), params);
         }
+        throw new Error("Contract not initialised");
     }
     async get_owner(): Promise<ex.Address> {
         if (this.address != undefined) {
@@ -333,7 +343,6 @@ export class Permits {
         INVALID_CALLER: ex.string_to_mich("\"INVALID_CALLER\""),
         p7: ex.string_to_mich("\"PERMIT_EXPIRED\""),
         p6: ex.pair_to_mich([ex.string_to_mich("\"INVALID_CONDITION\""), ex.string_to_mich("\"p6\"")]),
-        USER_PERMIT_NOT_FOUND: ex.string_to_mich("\"USER_PERMIT_NOT_FOUND\""),
         p4: ex.pair_to_mich([ex.string_to_mich("\"INVALID_CONDITION\""), ex.string_to_mich("\"p4\"")]),
         r3: ex.pair_to_mich([ex.string_to_mich("\"INVALID_CONDITION\""), ex.string_to_mich("\"r3\"")]),
         r2: ex.string_to_mich("\"EXPIRY_TOO_BIG\""),

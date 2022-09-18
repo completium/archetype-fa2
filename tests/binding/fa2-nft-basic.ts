@@ -214,6 +214,14 @@ const transfer_arg_to_mich = (itxs: Array<transfer_item>): ex.Micheline => {
         return x.to_mich();
     });
 }
+const balance_of_arg_to_mich = (balance_of_arg: [
+    Array<balance_of_request>,
+    ex.Entrypoint
+]): ex.Micheline => {
+    return ex.pair_to_mich([ex.list_to_mich(balance_of_arg[0], x => {
+            return x.to_mich();
+        }), balance_of_arg[1].to_mich()]);
+}
 export class Fa2_basic {
     address: string | undefined;
     get_address(): ex.Address {
@@ -234,13 +242,24 @@ export class Fa2_basic {
     }
     async update_operators(upl: Array<ex.Or<operator_param, operator_param>>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "update_operators", update_operators_arg_to_mich(upl), params);
+            return await ex.call(this.address, "update_operators", update_operators_arg_to_mich(upl), params);
         }
+        throw new Error("Contract not initialised");
     }
     async transfer(itxs: Array<transfer_item>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            await ex.call(this.address, "transfer", transfer_arg_to_mich(itxs), params);
+            return await ex.call(this.address, "transfer", transfer_arg_to_mich(itxs), params);
         }
+        throw new Error("Contract not initialised");
+    }
+    async balance_of(balance_of_arg: [
+        Array<balance_of_request>,
+        ex.Entrypoint
+    ], params: Partial<ex.Parameters>): Promise<any> {
+        if (this.address != undefined) {
+            return await ex.call(this.address, "balance_of", balance_of_arg_to_mich(balance_of_arg), params);
+        }
+        throw new Error("Contract not initialised");
     }
     async get_ledger_value(key: ledger_key): Promise<ledger_value | undefined> {
         if (this.address != undefined) {
