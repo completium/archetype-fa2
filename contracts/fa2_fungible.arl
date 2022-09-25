@@ -322,9 +322,10 @@ record balance_of_request {
 } as ((owner, token_id))
 
 record balance_of_response {
+  test : nat;
   request : balance_of_request;
   balance_ : nat;
-} as ((request, balance))
+} as ((test, request, balance))
 
 getter balance_of (requests : list<balance_of_request>) : list<balance_of_response> {
   return map(requests, br ->
@@ -332,6 +333,7 @@ getter balance_of (requests : list<balance_of_request>) : list<balance_of_respon
       if br.btoken_id <> TOKEN_ID then 0
       else (ledger[br.bo_owner] ? the.lamount : 0) in
     {
+      test = 0;
       request = br;
       balance_ = b
     })

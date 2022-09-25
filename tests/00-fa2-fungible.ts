@@ -1,4 +1,4 @@
-import { Account, Bytes, expect_to_fail, get_account, Key, Nat, Option, option_to_mich_type, Or, pack, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, set_mockup, set_mockup_now, set_quiet, sign, Signature, string_to_mich, transfer, blake2b } from '@completium/experiment-ts'
+import { Account, blake2b, Bytes, expect_to_fail, get_account, Key, Nat, Option, option_to_mich_type, Or, pack, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, set_mockup, set_mockup_now, set_quiet, sign, Signature, string_to_mich, transfer } from '@completium/experiment-ts'
 
 import { get_packed_transfer_params, get_transfer_permit_data } from './utils'
 
@@ -6,7 +6,7 @@ const assert = require('assert');
 
 /* Contracts */
 
-import { fa2_fungible, gasless_param, operator_key, operator_param, transfer_destination, transfer_param } from './binding/fa2_fungible';
+import { balance_of_request, fa2_fungible, gasless_param, operator_key, operator_param, transfer_destination, transfer_param } from './binding/fa2_fungible';
 import { add, permits, permits_value, user_permit } from './binding/permits';
 
 /* Accounts ----------------------------------------------------------------- */
@@ -799,42 +799,35 @@ describe('[FA2 fungible] Transfer ownership', async () => {
   });
 });
 
-/*
+
 describe('[FA2 fungible] Balance of', async () => {
 
   it('Simple balance of', async () => {
-    const balance_alice = await getBalanceLedger(fa2, alice.pkh);
+    const balance_alice = await fa2_fungible.get_ledger_value(alice.get_address())
 
-    const res = await runGetter("balance_of", fa2.address, {
-      argMichelson: `{ Pair "${alice.pkh}" ${token_id} }`,
-      as: alice.pkh,
-    });
+    const res = await fa2_fungible.balance_of([new balance_of_request(alice.get_address(), token_id)], {})
 
-    const resRef = `{Pair (Pair 0x00006b82198cb179e8306c1bedd08f12dc863f328886 ${token_id}) ${balance_alice}}`
-    assert(res == resRef, "Invalid value")
+    assert(res.length == 1)
+    assert(balance_alice?.equals(res[0].balance_),              "Invalid balance amount")
+    assert(alice.get_address().equals(res[0].request.bo_owner), "Invalid address")
   });
 
   it('Call balance of with other token id', async () => {
-    const otherTokenId = 1
+    const other_token_id = new Nat(1)
 
-    const res = await runGetter("balance_of", fa2.address, {
-      argMichelson: `{ Pair "${alice.pkh}" ${otherTokenId} }`,
-      as: alice.pkh,
-    });
+    const res = await fa2_fungible.balance_of([new balance_of_request(alice.get_address(), other_token_id)], {})
 
-    const resRef = `{Pair (Pair 0x00006b82198cb179e8306c1bedd08f12dc863f328886 ${otherTokenId}) 0}`
-    assert(res == resRef, "Invalid value")
+    assert(res.length == 1)
+    assert((new Nat(0)).equals(res[0].balance_),                "Invalid balance amount")
+    assert(alice.get_address().equals(res[0].request.bo_owner), "Invalid address")
   });
 
   it('Call balance of with unknown address', async () => {
-    const res = await runGetter("balance_of", fa2.address, {
-      argMichelson: `{ Pair "${user4.pkh}" ${token_id} }`,
-      as: alice.pkh,
-    });
+    const res = await fa2_fungible.balance_of([new balance_of_request(user4.get_address(), token_id)], {})
 
-    const resRef = `{Pair (Pair 0x0000a9ceae0f8909125492a7c4700acc59274cc6c846 ${token_id}) 0}`
-    assert(res == resRef, "Invalid value")
+    assert(res.length == 1)
+    assert((new Nat(0)).equals(res[0].balance_),                "Invalid balance amount")
+    assert(user4.get_address().equals(res[0].request.bo_owner), "Invalid address")
   });
 
 });
-*/

@@ -214,16 +214,23 @@ const transfer_arg_to_mich = (itxs: Array<transfer_item>): ex.Micheline => {
         return x.to_mich();
     });
 }
-const balance_of_arg_to_mich = (balance_of_arg: [
-    Array<balance_of_request>,
-    ex.Entrypoint
-]): ex.Micheline => {
-    return ex.pair_to_mich([ex.list_to_mich(balance_of_arg[0], x => {
-            return x.to_mich();
-        }), balance_of_arg[1].to_mich()]);
+const balance_of_arg_to_mich = (requests: Array<balance_of_request>): ex.Micheline => {
+    return ex.list_to_mich(requests, x => {
+        return x.to_mich();
+    });
 }
+export const deploy_balance_of_callback = async (): Promise<string> => {
+    return await ex.deploy_callback("balance_of", ex.list_annot_to_mich_type(ex.pair_array_to_mich_type([
+        ex.pair_array_to_mich_type([
+            ex.prim_annot_to_mich_type("address", ["%owner"]),
+            ex.prim_annot_to_mich_type("nat", ["%token_id"])
+        ]),
+        ex.prim_annot_to_mich_type("nat", ["%balance"])
+    ]), []));
+};
 export class Fa2_basic {
     address: string | undefined;
+    balance_of_callback_address: string | undefined;
     get_address(): ex.Address {
         if (undefined != this.address) {
             return new ex.Address(this.address);
@@ -239,6 +246,7 @@ export class Fa2_basic {
     async deploy(params: Partial<ex.Parameters>) {
         const address = await ex.deploy("./contracts/fa2_basic.arl", {}, params);
         this.address = address;
+        this.balance_of_callback_address = await deploy_balance_of_callback();
     }
     async update_operators(upl: Array<ex.Or<operator_param, operator_param>>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
@@ -252,12 +260,27 @@ export class Fa2_basic {
         }
         throw new Error("Contract not initialised");
     }
-    async balance_of(balance_of_arg: [
-        Array<balance_of_request>,
-        ex.Entrypoint
-    ], params: Partial<ex.Parameters>): Promise<any> {
+    async get_update_operators_param(upl: Array<ex.Or<operator_param, operator_param>>, params: Partial<ex.Parameters>): Promise<ex.CallParameter> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "balance_of", balance_of_arg_to_mich(balance_of_arg), params);
+            return await ex.get_call_param(this.address, "update_operators", update_operators_arg_to_mich(upl), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_transfer_param(itxs: Array<transfer_item>, params: Partial<ex.Parameters>): Promise<ex.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "transfer", transfer_arg_to_mich(itxs), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async balance_of(requests: Array<balance_of_request>, params: Partial<ex.Parameters>): Promise<Array<balance_of_response>> {
+        if (this.address != undefined) {
+            if (this.balance_of_callback_address != undefined) {
+                const entrypoint = new ex.Entrypoint(new ex.Address(this.balance_of_callback_address), "callback");
+                await ex.call(this.address, "balance_of", ex.getter_args_to_mich(balance_of_arg_to_mich(requests), entrypoint), params);
+                return await ex.get_callback_value<Array<balance_of_response>>(this.balance_of_callback_address, x => { const res: Array<balance_of_response> = []; for (let i = 0; i < x.length; i++) {
+                    res.push((x => { return new balance_of_response((x => { return new balance_of_request((x => { return new ex.Address(x); })(x.owner), (x => { return new ex.Nat(x); })(x.token_id)); })(x.request), (x => { return new ex.Nat(x); })(x.balance)); })(x[i]));
+                } return res; });
+            }
         }
         throw new Error("Contract not initialised");
     }

@@ -10,8 +10,8 @@
     "gen-binding": "completium-cli generate binding-ts _ --input-path ./contracts/ --output-path ./tests/binding/"
   },
   "dependencies": {
-    "@completium/completium-cli": "^0.4.20",
-    "@completium/experiment-ts": "^0.0.68",
+    "@completium/completium-cli": "^0.4.22",
+    "@completium/experiment-ts": "^0.0.77",
     "@taquito/taquito": "^13.0.0",
     "bignumber.js": "^9.0.2",
     "chai": "^4.3.4",
