@@ -66,15 +66,15 @@ export const operator_param_mich_type: ex.MichelineType = ex.pair_array_to_mich_
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("address", ["%operator"]),
         ex.prim_annot_to_mich_type("nat", ["%token_id"])
-    ])
-]);
+    ], [])
+], []);
 export const transfer_destination_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%to_"]),
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("nat", ["%token_id"]),
         ex.prim_annot_to_mich_type("nat", ["%amount"])
-    ])
-]);
+    ], [])
+], []);
 export const transfer_item_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%from_"]),
     ex.list_annot_to_mich_type(ex.pair_array_to_mich_type([
@@ -82,20 +82,20 @@ export const transfer_item_mich_type: ex.MichelineType = ex.pair_array_to_mich_t
         ex.pair_array_to_mich_type([
             ex.prim_annot_to_mich_type("nat", ["%token_id"]),
             ex.prim_annot_to_mich_type("nat", ["%amount"])
-        ])
-    ]), ["%txs"])
-]);
+        ], [])
+    ], []), ["%txs"])
+], []);
 export const balance_of_request_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%owner"]),
     ex.prim_annot_to_mich_type("nat", ["%token_id"])
-]);
+], []);
 export const balance_of_response_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("address", ["%owner"]),
         ex.prim_annot_to_mich_type("nat", ["%token_id"])
-    ]),
+    ], ["%request"]),
     ex.prim_annot_to_mich_type("nat", ["%balance"])
-]);
+], []);
 export const mich_to_operator_param = (v: ex.Micheline, collapsed: boolean = false): operator_param => {
     let fields: ex.Micheline[] = [];
     if (collapsed) {
@@ -165,8 +165,8 @@ export const operator_key_mich_type: ex.MichelineType = ex.pair_array_to_mich_ty
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("nat", ["%otoken"]),
         ex.prim_annot_to_mich_type("address", ["%oowner"])
-    ])
-]);
+    ], [])
+], []);
 export type ledger_value = ex.Address;
 export class operator_value implements ex.ArchetypeType {
     constructor() { }
@@ -202,8 +202,8 @@ export const operator_container_mich_type: ex.MichelineType = ex.pair_to_mich_ty
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("nat", ["%otoken"]),
         ex.prim_annot_to_mich_type("address", ["%oowner"])
-    ])
-]), ex.prim_annot_to_mich_type("unit", []));
+    ], [])
+], []), ex.prim_annot_to_mich_type("unit", []));
 const update_operators_arg_to_mich = (upl: Array<ex.Or<operator_param, operator_param>>): ex.Micheline => {
     return ex.list_to_mich(upl, x => {
         return x.to_mich();
@@ -224,9 +224,9 @@ export const deploy_balance_of_callback = async (): Promise<string> => {
         ex.pair_array_to_mich_type([
             ex.prim_annot_to_mich_type("address", ["%owner"]),
             ex.prim_annot_to_mich_type("nat", ["%token_id"])
-        ]),
+        ], ["%request"]),
         ex.prim_annot_to_mich_type("nat", ["%balance"])
-    ]), []));
+    ], []), []));
 };
 export class Fa2_basic {
     address: string | undefined;

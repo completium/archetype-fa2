@@ -40,7 +40,7 @@ export class user_permit implements ex.ArchetypeType {
 export const user_permit_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.option_annot_to_mich_type(ex.prim_annot_to_mich_type("nat", []), ["%expiry"]),
     ex.prim_annot_to_mich_type("timestamp", ["%created_at"])
-]);
+], []);
 export const mich_to_user_permit = (v: ex.Micheline, collapsed: boolean = false): user_permit => {
     let fields: ex.Micheline[] = [];
     if (collapsed) {
@@ -81,9 +81,9 @@ export const permits_value_mich_type: ex.MichelineType = ex.pair_array_to_mich_t
         ex.pair_to_mich_type("map", ex.prim_annot_to_mich_type("bytes", []), ex.pair_array_to_mich_type([
             ex.option_annot_to_mich_type(ex.prim_annot_to_mich_type("nat", []), ["%expiry"]),
             ex.prim_annot_to_mich_type("timestamp", ["%created_at"])
-        ]))
-    ])
-]);
+        ], []))
+    ], [])
+], []);
 export const mich_to_permits_value = (v: ex.Micheline, collapsed: boolean = false): permits_value => {
     let fields: ex.Micheline[] = [];
     if (collapsed) {
@@ -107,9 +107,9 @@ export const permits_container_mich_type: ex.MichelineType = ex.pair_to_mich_typ
         ex.pair_to_mich_type("map", ex.prim_annot_to_mich_type("bytes", []), ex.pair_array_to_mich_type([
             ex.option_annot_to_mich_type(ex.prim_annot_to_mich_type("nat", []), ["%expiry"]),
             ex.prim_annot_to_mich_type("timestamp", ["%created_at"])
-        ]))
-    ])
-]));
+        ], []))
+    ], [])
+], []));
 const declare_ownership_arg_to_mich = (candidate: ex.Address): ex.Micheline => {
     return candidate.to_mich();
 }

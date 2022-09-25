@@ -118,8 +118,8 @@ export const transfer_destination_mich_type: ex.MichelineType = ex.pair_array_to
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("nat", ["%token_id"]),
         ex.prim_annot_to_mich_type("nat", ["%amount"])
-    ])
-]);
+    ], [])
+], []);
 export const transfer_param_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%from_"]),
     ex.list_annot_to_mich_type(ex.pair_array_to_mich_type([
@@ -127,20 +127,20 @@ export const transfer_param_mich_type: ex.MichelineType = ex.pair_array_to_mich_
         ex.pair_array_to_mich_type([
             ex.prim_annot_to_mich_type("nat", ["%token_id"]),
             ex.prim_annot_to_mich_type("nat", ["%amount"])
-        ])
-    ]), ["%txs"])
-]);
+        ], [])
+    ], []), ["%txs"])
+], []);
 export const part_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%part_account"]),
     ex.prim_annot_to_mich_type("nat", ["%part_value"])
-]);
+], []);
 export const operator_param_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%owner"]),
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("address", ["%operator"]),
         ex.prim_annot_to_mich_type("nat", ["%token_id"])
-    ])
-]);
+    ], [])
+], []);
 export const gasless_param_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.list_annot_to_mich_type(ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("address", ["%from_"]),
@@ -149,25 +149,25 @@ export const gasless_param_mich_type: ex.MichelineType = ex.pair_array_to_mich_t
             ex.pair_array_to_mich_type([
                 ex.prim_annot_to_mich_type("nat", ["%token_id"]),
                 ex.prim_annot_to_mich_type("nat", ["%amount"])
-            ])
-        ]), ["%txs"])
-    ]), ["%transfer_params"]),
+            ], [])
+        ], []), ["%txs"])
+    ], []), ["%transfer_params"]),
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("key", ["%user_pk"]),
         ex.prim_annot_to_mich_type("signature", ["%user_sig"])
-    ])
-]);
+    ], [])
+], []);
 export const balance_of_request_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%owner"]),
     ex.prim_annot_to_mich_type("nat", ["%token_id"])
-]);
+], []);
 export const balance_of_response_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("address", ["%owner"]),
         ex.prim_annot_to_mich_type("nat", ["%token_id"])
-    ]),
+    ], ["%request"]),
     ex.prim_annot_to_mich_type("nat", ["%balance"])
-]);
+], []);
 export const mich_to_transfer_destination = (v: ex.Micheline, collapsed: boolean = false): transfer_destination => {
     let fields: ex.Micheline[] = [];
     if (collapsed) {
@@ -273,12 +273,12 @@ export const operator_key_mich_type: ex.MichelineType = ex.pair_array_to_mich_ty
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("nat", ["%otoken"]),
         ex.prim_annot_to_mich_type("address", ["%oowner"])
-    ])
-]);
+    ], [])
+], []);
 export const operator_for_all_key_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%fa_oaddr"]),
     ex.prim_annot_to_mich_type("address", ["%fa_oowner"])
-]);
+], []);
 export class token_metadata_value implements ex.ArchetypeType {
     constructor(public token_id: ex.Nat, public token_info: Array<[
         string,
@@ -327,12 +327,12 @@ export class operator_for_all_value implements ex.ArchetypeType {
 export const token_metadata_value_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("nat", ["%token_id"]),
     ex.pair_to_mich_type("map", ex.prim_annot_to_mich_type("string", []), ex.prim_annot_to_mich_type("bytes", []))
-]);
+], []);
 export const ledger_value_mich_type: ex.MichelineType = ex.prim_annot_to_mich_type("address", []);
 export const royalties_value_mich_type: ex.MichelineType = ex.list_annot_to_mich_type(ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%part_account"]),
     ex.prim_annot_to_mich_type("nat", ["%part_value"])
-]), []);
+], []), []);
 export const operator_value_mich_type: ex.MichelineType = ex.prim_annot_to_mich_type("unit", []);
 export const operator_for_all_value_mich_type: ex.MichelineType = ex.prim_annot_to_mich_type("unit", []);
 export const mich_to_token_metadata_value = (v: ex.Micheline, collapsed: boolean = false): token_metadata_value => {
@@ -380,23 +380,23 @@ export type operator_for_all_container = Array<[
 export const token_metadata_container_mich_type: ex.MichelineType = ex.pair_to_mich_type("big_map", ex.prim_annot_to_mich_type("nat", []), ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("nat", ["%token_id"]),
     ex.pair_to_mich_type("map", ex.prim_annot_to_mich_type("string", []), ex.prim_annot_to_mich_type("bytes", []))
-]));
+], []));
 export const ledger_container_mich_type: ex.MichelineType = ex.pair_to_mich_type("big_map", ex.prim_annot_to_mich_type("nat", []), ex.prim_annot_to_mich_type("address", []));
 export const royalties_container_mich_type: ex.MichelineType = ex.pair_to_mich_type("big_map", ex.prim_annot_to_mich_type("nat", []), ex.list_annot_to_mich_type(ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%part_account"]),
     ex.prim_annot_to_mich_type("nat", ["%part_value"])
-]), []));
+], []), []));
 export const operator_container_mich_type: ex.MichelineType = ex.pair_to_mich_type("big_map", ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%oaddr"]),
     ex.pair_array_to_mich_type([
         ex.prim_annot_to_mich_type("nat", ["%otoken"]),
         ex.prim_annot_to_mich_type("address", ["%oowner"])
-    ])
-]), ex.prim_annot_to_mich_type("unit", []));
+    ], [])
+], []), ex.prim_annot_to_mich_type("unit", []));
 export const operator_for_all_container_mich_type: ex.MichelineType = ex.pair_to_mich_type("big_map", ex.pair_array_to_mich_type([
     ex.prim_annot_to_mich_type("address", ["%fa_oaddr"]),
     ex.prim_annot_to_mich_type("address", ["%fa_oowner"])
-]), ex.prim_annot_to_mich_type("unit", []));
+], []), ex.prim_annot_to_mich_type("unit", []));
 const declare_ownership_arg_to_mich = (candidate: ex.Address): ex.Micheline => {
     return candidate.to_mich();
 }
@@ -489,9 +489,9 @@ export const deploy_balance_of_callback = async (): Promise<string> => {
         ex.pair_array_to_mich_type([
             ex.prim_annot_to_mich_type("address", ["%owner"]),
             ex.prim_annot_to_mich_type("nat", ["%token_id"])
-        ]),
+        ], ["%request"]),
         ex.prim_annot_to_mich_type("nat", ["%balance"])
-    ]), []));
+    ], []), []));
 };
 export class Fa2nft {
     address: string | undefined;
