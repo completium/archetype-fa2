@@ -7,6 +7,7 @@
   },
   "scripts": {
     "test": "rm -rf ./build && npx tsc --outDir build && mocha --timeout 0 --slow 99999999999999999 ./build/tests/*.js",
+    "test-nft": "rm -rf ./build && npx tsc --outDir build && mocha --timeout 0 --slow 99999999999999999 ./build/tests/01-fa2-nft.js",
     "gen-binding": "completium-cli generate binding-ts _ --input-path ./contracts/ --output-path ./tests/binding/"
   },
   "dependencies": {

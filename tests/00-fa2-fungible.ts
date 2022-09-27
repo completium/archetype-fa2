@@ -1,6 +1,6 @@
-import { Account, blake2b, Bytes, expect_to_fail, get_account, Key, Nat, Option, option_to_mich_type, Or, pack, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, set_mockup, set_mockup_now, set_quiet, sign, Signature, string_to_mich, transfer } from '@completium/experiment-ts'
+import { blake2b, Bytes, expect_to_fail, get_account, Key, Nat, Option, Or, pair_to_mich, set_mockup, set_mockup_now, set_quiet, Signature, string_to_mich } from '@completium/experiment-ts'
 
-import { get_packed_transfer_params, get_transfer_permit_data } from './utils'
+import { get_packed_transfer_params, get_transfer_permit_data, get_missigned_error, wrong_packed_transfer_params, wrong_sig } from './utils'
 
 const assert = require('assert');
 
@@ -38,9 +38,6 @@ const token_id = new Nat(0)
 const amount = new Nat(123)
 const expiry = new Nat(31556952)
 
-const wrong_sig = new Signature("edsigu3QDtEZeSCX146136yQdJnyJDfuMRsDxiCgea3x7ty2RTwDdPpgioHWJUe86tgTCkeD2u16Az5wtNFDdjGyDpb7MiyU3fn");
-const wrong_packed_transfer_params = new Bytes('9aabe91d035d02ffb550bb9ea6fe19970f6fb41b5e69459a60b1ae401192a2dc');
-
 const get_ref_user_permits = (counter : Nat, data : Bytes, expiry : Nat, now : Date) => {
   return new permits_value(counter, Option.None<Nat>(), [[
     blake2b(data),
@@ -48,11 +45,8 @@ const get_ref_user_permits = (counter : Nat, data : Bytes, expiry : Nat, now : D
   ]])
 }
 
-const get_missigned_error = (permit_data : Bytes) => {
-  return pair_to_mich([string_to_mich("\"MISSIGNED\""), permit_data.to_mich()])
-}
-
 /* Scenarios --------------------------------------------------------------- */
+
 describe('[FA2 fungible] Contracts deployment', async () => {
   it('Permits contract deployment should succeed', async () => {
     await permits.deploy( alice.get_address(), { as: alice })
@@ -229,7 +223,6 @@ describe('[FA2 fungible] Add permit', async () => {
   });
 
   it('Add a duplicated permit should succeed', async () => {
-    const amount = new Nat(123);
     const initial_permit = await permits.get_permits_value(alice.get_address())
 
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter

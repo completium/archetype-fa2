@@ -822,7 +822,7 @@
       "name": "permit",
       "args": [
         {
-          "name": "pk",
+          "name": "signer",
           "type": {
             "node": "key",
             "name": null,
@@ -851,7 +851,7 @@
       "name": "consume",
       "args": [
         {
-          "name": "signer",
+          "name": "user",
           "type": {
             "node": "address",
             "name": null,
@@ -907,6 +907,7 @@
     }
   ],
   "getters": [],
+  "views": [],
   "errors": [
     {
       "kind": "InvalidCondition",
@@ -966,23 +967,6 @@
     {
       "kind": "InvalidCondition",
       "args": [
-        "p7"
-      ],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
-        "string": "PERMIT_EXPIRED",
-        "args": [],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    },
-    {
-      "kind": "InvalidCondition",
-      "args": [
         "p6"
       ],
       "expr": {
@@ -1014,21 +998,6 @@
             "var_type": null
           }
         ],
-        "annots": [],
-        "array": [],
-        "var_id": null,
-        "var_type": null
-      }
-    },
-    {
-      "kind": "Invalid",
-      "args": [],
-      "expr": {
-        "prim": null,
-        "int": null,
-        "bytes": null,
-        "string": "USER_PERMIT_NOT_FOUND",
-        "args": [],
         "annots": [],
         "array": [],
         "var_id": null,

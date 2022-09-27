@@ -493,7 +493,7 @@ export const deploy_balance_of_callback = async (): Promise<string> => {
         ex.prim_annot_to_mich_type("nat", ["%balance"])
     ], []), []));
 };
-export class Fa2nft {
+export class Fa2_nft {
     address: string | undefined;
     balance_of_callback_address: string | undefined;
     get_address(): ex.Address {
@@ -509,7 +509,7 @@ export class Fa2nft {
         throw new Error("Contract not initialised");
     }
     async deploy(owner: ex.Address, permits: ex.Address, params: Partial<ex.Parameters>) {
-        const address = await ex.deploy("./contracts/fa2nft.arl", {
+        const address = await ex.deploy("./contracts/fa2_nft.arl", {
             owner: owner.to_mich(),
             permits: permits.to_mich()
         }, params);
@@ -925,4 +925,4 @@ export class Fa2nft {
         CONTRACT_PAUSED: ex.string_to_mich("\"CONTRACT_PAUSED\"")
     };
 }
-export const fa2nft = new Fa2nft();
+export const fa2_nft = new Fa2_nft();

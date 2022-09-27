@@ -32,3 +32,10 @@ export const get_transfer_permit_data = (ptps : Bytes, contract : Address, permi
   ])
   return pack(permit_data, permit_data_type);
 }
+
+export const wrong_sig = new Signature("edsigu3QDtEZeSCX146136yQdJnyJDfuMRsDxiCgea3x7ty2RTwDdPpgioHWJUe86tgTCkeD2u16Az5wtNFDdjGyDpb7MiyU3fn");
+export const wrong_packed_transfer_params = new Bytes('9aabe91d035d02ffb550bb9ea6fe19970f6fb41b5e69459a60b1ae401192a2dc');
+
+export const get_missigned_error = (permit_data : Bytes) => {
+  return pair_to_mich([string_to_mich("\"MISSIGNED\""), permit_data.to_mich()])
+}
