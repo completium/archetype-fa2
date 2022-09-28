@@ -90,15 +90,15 @@ export class balance_of_request implements ex.ArchetypeType {
     }
 }
 export class balance_of_response implements ex.ArchetypeType {
-    constructor(public test: ex.Nat, public request: balance_of_request, public balance_: ex.Nat) { }
+    constructor(public request: balance_of_request, public balance_: ex.Nat) { }
     toString(): string {
         return JSON.stringify(this, null, 2);
     }
     to_mich(): ex.Micheline {
-        return ex.pair_to_mich([this.test.to_mich(), ex.pair_to_mich([this.request.to_mich(), this.balance_.to_mich()])]);
+        return ex.pair_to_mich([this.request.to_mich(), this.balance_.to_mich()]);
     }
     equals(v: balance_of_response): boolean {
-        return (this.test.equals(v.test) && this.test.equals(v.test) && this.request == v.request && this.balance_.equals(v.balance_));
+        return (this.request == v.request && this.request == v.request && this.balance_.equals(v.balance_));
     }
 }
 export const transfer_destination_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
@@ -146,14 +146,11 @@ export const balance_of_request_mich_type: ex.MichelineType = ex.pair_array_to_m
     ex.prim_annot_to_mich_type("nat", ["%token_id"])
 ], []);
 export const balance_of_response_mich_type: ex.MichelineType = ex.pair_array_to_mich_type([
-    ex.prim_annot_to_mich_type("nat", ["%test"]),
     ex.pair_array_to_mich_type([
-        ex.pair_array_to_mich_type([
-            ex.prim_annot_to_mich_type("address", ["%owner"]),
-            ex.prim_annot_to_mich_type("nat", ["%token_id"])
-        ], ["%request"]),
-        ex.prim_annot_to_mich_type("nat", ["%balance"])
-    ], [])
+        ex.prim_annot_to_mich_type("address", ["%owner"]),
+        ex.prim_annot_to_mich_type("nat", ["%token_id"])
+    ], ["%request"]),
+    ex.prim_annot_to_mich_type("nat", ["%balance"])
 ], []);
 export const mich_to_transfer_destination = (v: ex.Micheline, collapsed: boolean = false): transfer_destination => {
     let fields: ex.Micheline[] = [];
@@ -213,7 +210,7 @@ export const mich_to_balance_of_response = (v: ex.Micheline, collapsed: boolean 
     else {
         fields = ex.annotated_mich_to_array(v, balance_of_response_mich_type);
     }
-    return new balance_of_response(ex.mich_to_nat(fields[0]), mich_to_balance_of_request(fields[1], collapsed), ex.mich_to_nat(fields[2]));
+    return new balance_of_response(mich_to_balance_of_request(fields[0], collapsed), ex.mich_to_nat(fields[1]));
 };
 export type token_metadata_key = ex.Nat;
 export type ledger_key = ex.Address;
@@ -431,14 +428,11 @@ const balance_of_arg_to_mich = (requests: Array<balance_of_request>): ex.Micheli
 }
 export const deploy_balance_of_callback = async (): Promise<string> => {
     return await ex.deploy_callback("balance_of", ex.list_annot_to_mich_type(ex.pair_array_to_mich_type([
-        ex.prim_annot_to_mich_type("nat", ["%test"]),
         ex.pair_array_to_mich_type([
-            ex.pair_array_to_mich_type([
-                ex.prim_annot_to_mich_type("address", ["%owner"]),
-                ex.prim_annot_to_mich_type("nat", ["%token_id"])
-            ], ["%request"]),
-            ex.prim_annot_to_mich_type("nat", ["%balance"])
-        ], [])
+            ex.prim_annot_to_mich_type("address", ["%owner"]),
+            ex.prim_annot_to_mich_type("nat", ["%token_id"])
+        ], ["%request"]),
+        ex.prim_annot_to_mich_type("nat", ["%balance"])
     ], []), []));
 };
 export class Fa2_fungible {
@@ -644,7 +638,7 @@ export class Fa2_fungible {
                 const entrypoint = new ex.Entrypoint(new ex.Address(this.balance_of_callback_address), "callback");
                 await ex.call(this.address, "balance_of", ex.getter_args_to_mich(balance_of_arg_to_mich(requests), entrypoint), params);
                 return await ex.get_callback_value<Array<balance_of_response>>(this.balance_of_callback_address, x => { const res: Array<balance_of_response> = []; for (let i = 0; i < x.length; i++) {
-                    res.push((x => { return new balance_of_response((x => { return new ex.Nat(x); })(x.test), (x => { return new balance_of_request((x => { return new ex.Address(x); })(x.owner), (x => { return new ex.Nat(x); })(x.token_id)); })(x.request), (x => { return new ex.Nat(x); })(x.balance)); })(x[i]));
+                    res.push((x => { return new balance_of_response((x => { return new balance_of_request((x => { return new ex.Address(x); })(x.owner), (x => { return new ex.Nat(x); })(x.token_id)); })(x.request), (x => { return new ex.Nat(x); })(x.balance)); })(x[i]));
                 } return res; });
             }
         }
