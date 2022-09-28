@@ -630,94 +630,208 @@ describe('[FA2 NFT] Set expiry', async () => {
     const permits_count_after = added_permits_after?.user_permits.length
     assert(permits_count_after != undefined ? permits_count_after == 0 : false, "Invalid count after: " + permits_count_after)
   });
-/*
+
   it('Set expiry with a correct value should succeed', async () => {
-    const testAmount = 11;
-    const expiry = 8;
-    var storage = await permits.getStorage();
+    const counter = (await permits.get_permits_value(carl.get_address()))?.counter
 
-    var counter = await getPermitNb(permits, carl.pkh);
+    const tps = [new transfer_param(carl.get_address(),
+      [ new transfer_destination(bob.get_address(), token_id, new Nat(11))
+    ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const permit_data = await get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await carl.sign(permit_data)
 
-    permit = await mkTransferPermit(
-      carl,
-      bob,
-      permits.address,
-      testAmount,
-      tokenId,
-      counter
-    );
-    const argM = `(Pair "${carl.pubk}" (Pair "${permit.sig.prefixSig}" 0x${permit.hash}))`;
+    await permits.permit(carl.get_public_key(), sig, packed_transfer_params, { as : alice })
 
-    var initialPermit = await getValueFromBigMap(
-      parseInt(storage.permits),
-      exprMichelineToJson(`"${carl.pkh}"`),
-      exprMichelineToJson(`address'`)
-    );
-    assert(
-      initialPermit.args.length == 3 &&
-      initialPermit.prim == 'Pair' &&
-      initialPermit.args[0].int == '' + counter &&
-      initialPermit.args[1].prim == 'None' &&
-      initialPermit.args[2].length == 0
-    );
-    await permits.permit({
-      argMichelson: argM,
-      as: alice.pkh,
-    });
+    await permits.set_expiry(
+      Option.Some(new Nat(8)),
+      Option.Some(packed_transfer_params),
+      { as : carl }
+    )
 
-    storage = await permits.getStorage();
-    var createdAt = await await getValueFromBigMap(
-      parseInt(storage.permits),
-      exprMichelineToJson(`"${carl.pkh}"`),
-      exprMichelineToJson(`address'`)
-    );
+    const permit_after = await permits.get_permits_value(carl.get_address())
+    assert(permit_after?.user_permits[0][1].expiry.get().equals(new Nat(8)))
 
-    counter = await getPermitNb(permits, carl.pkh);
-    assert(
-      createdAt.args.length == 3 &&
-      createdAt.prim == 'Pair' &&
-      createdAt.args[0].int == '' + counter &&
-      createdAt.args[1].prim == 'None' &&
-      createdAt.args[2].length == 1 &&
-      createdAt.args[2][0].prim == 'Elt' &&
-      createdAt.args[2][0].args[0].bytes == permit.hash &&
-      createdAt.args[2][0].args[1].prim == 'Pair' &&
-      createdAt.args[2][0].args[1].args[0].prim == 'Some' &&
-      createdAt.args[2][0].args[1].args[0].args[0].int == '31556952'
-    );
-
-    var creationDate = createdAt.args[2][0].args[1].args[1].string;
-
-    const argMExp = `(Pair (Some ${expiry}) (Some 0x${permit.hash}))`;
-
-    await permits.set_expiry({
-      argMichelson: argMExp,
-      as: carl.pkh,
-    });
-
-    storage = await permits.getStorage();
-
-    var addedPermit = await getValueFromBigMap(
-      parseInt(storage.permits),
-      exprMichelineToJson(`"${carl.pkh}"`),
-      exprMichelineToJson(`address'`)
-    );
-
-    counter = await getPermitNb(permits, carl.pkh);
-
-    assert(
-      addedPermit.args.length == 3 &&
-      addedPermit.prim == 'Pair' &&
-      addedPermit.args[0].int == '' + counter &&
-      addedPermit.args[1].prim == 'None' &&
-      addedPermit.args[2].length == 1 &&
-      addedPermit.args[2][0].prim == 'Elt' &&
-      addedPermit.args[2][0].args[0].bytes == permit.hash &&
-      addedPermit.args[2][0].args[1].prim == 'Pair' &&
-      addedPermit.args[2][0].args[1].args[0].prim == 'Some' &&
-      addedPermit.args[2][0].args[1].args[0].args[0].int == expiry &&
-      addedPermit.args[2][0].args[1].args[1].string == creationDate
-    );
   });
-*/
+
 });
+
+describe('[FA2 NFT] Burn', async () => {
+  it('Burn without tokens should fail', async () => {
+    await expect_to_fail(async () => {
+      await fa2_nft.burn(token_id, { as : alice })
+    }, fa2_nft.errors.CALLER_NOT_OWNER);
+  });
+
+  it('Burn tokens with enough tokens should succeed', async () => {
+    const new_token = new Nat(999)
+
+    await fa2_nft.mint(
+      alice.get_address(),      // owner
+      new_token,                // token id
+      [['', new Bytes('')]],    // metadata
+      [                         // royalties
+        new part(alice.get_address(), new Nat(1000)),
+        new part(bob.get_address(), new Nat(500))
+      ], {
+        as: alice,
+      }
+    );
+
+    const owner = await fa2_nft.get_ledger_value(new_token)
+    assert(owner?.equals(alice.get_address()))
+
+    await fa2_nft.burn(new_token, { as : alice })
+
+    const new_owner = await fa2_nft.get_ledger_value(new_token)
+    assert(new_owner == undefined)
+  });
+
+  it('Re-mint a burnt token', async () => {
+    const new_token = new Nat(999)
+
+    await fa2_nft.mint(
+      alice.get_address(),      // owner
+      new_token,                // token id
+      [['', new Bytes('')]],    // metadata
+      [                         // royalties
+        new part(alice.get_address(), new Nat(1000)),
+        new part(bob.get_address(), new Nat(500))
+      ], {
+        as: alice,
+      }
+    );
+    const owner = await fa2_nft.get_ledger_value(new_token)
+    assert(owner?.equals(alice.get_address()))
+
+    await fa2_nft.burn(new_token, { as : alice })
+
+    const new_owner = await fa2_nft.get_ledger_value(new_token)
+    assert(new_owner == undefined)
+  });
+});
+
+describe('[FA2 fungible] Pause', async () => {
+  it('Set FA2 on pause should succeed', async () => {
+    await fa2_nft.pause({ as: alice });
+    const is_paused = await fa2_nft.get_paused()
+    assert(is_paused);
+  });
+  it('Set Permits on pause should succeed', async () => {
+    await permits.pause({ as: alice });
+    const is_paused = await fa2_nft.get_paused()
+    assert(is_paused);
+  });
+
+  it('Minting is not possible when contract is paused should fail', async () => {
+    await expect_to_fail(async () => {
+      const new_token = new Nat(999)
+
+      await fa2_nft.mint(
+        alice.get_address(),      // owner
+        new_token,                // token id
+        [['', new Bytes('')]],    // metadata
+        [                         // royalties
+          new part(alice.get_address(), new Nat(1000)),
+          new part(bob.get_address(), new Nat(500))
+        ], {
+          as: alice,
+        }
+      );
+    }, fa2_nft.errors.CONTRACT_PAUSED);
+  });
+
+  it('Update operators is not possible when contract is paused should fail', async () => {
+    await expect_to_fail(async () => {
+      await fa2_nft.update_operators([
+        Or.Left(new operator_param(alice.get_address(), fa2_nft.get_address(), token_id))
+      ], { as : alice })
+    }, fa2_nft.errors.CONTRACT_PAUSED);
+  });
+
+  it('Add permit is not possible when contract is paused should fail', async () => {
+    const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
+    const tps = [new transfer_param(alice.get_address(), [ new transfer_destination(bob.get_address(), token_id, amount) ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const permit_data = get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      alice_permit_counter);
+    const sig = await alice.sign(permit_data)
+
+    await expect_to_fail(async () => {
+      await permits.permit(alice.get_public_key(), sig, packed_transfer_params, { as : alice });
+    }, fa2_nft.errors.CONTRACT_PAUSED);
+  });
+
+  it('Transfer is not possible when contract is paused should fail', async () => {
+    await expect_to_fail(async () => {
+      await fa2_nft.transfer([new transfer_param(
+        user1.get_address(),
+        [new transfer_destination(user2.get_address(), token_id, new Nat(1))])],
+        { as: user1 });
+    }, fa2_nft.errors.CONTRACT_PAUSED);
+  });
+
+  it('Set metadata is not possible when contract is paused should fail', async () => {
+    await expect_to_fail(async () => {
+      await fa2_nft.set_metadata("key", Option.Some(new Bytes("")), { as : alice })
+    }, fa2_nft.errors.CONTRACT_PAUSED);
+  });
+
+  it('Set expiry is not possible when contract is paused should fail', async () => {
+    const tps = [new transfer_param(alice.get_address(), [ new transfer_destination(bob.get_address(), token_id, amount) ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+
+    await expect_to_fail(async () => {
+      await permits.set_expiry(Option.Some(new Nat(0)), Option.Some(packed_transfer_params), { as : alice })
+    }, fa2_nft.errors.CONTRACT_PAUSED);
+  });
+
+  it('Burn is not possible when contract is paused should fail', async () => {
+    await expect_to_fail(async () => {
+      await fa2_nft.burn(new Nat(1), { as : alice })
+    }, fa2_nft.errors.CONTRACT_PAUSED);
+  });
+
+  it('Unpause by not owner should fail', async () => {
+    await expect_to_fail(async () => {
+      await fa2_nft.unpause({ as: bob });
+    }, fa2_nft.errors.INVALID_CALLER);
+  });
+
+  it('Unpause by owner should succeed', async () => {
+    await fa2_nft.unpause({ as: alice });
+    await permits.unpause({ as: alice });
+  });
+});
+
+describe('[FA2 fungible] Transfer ownership', async () => {
+
+  it('Transfer ownership when contract is paused should succeed', async () => {
+    const owner = await fa2_nft.get_owner()
+    assert(owner.equals(alice.get_address()));
+    await fa2_nft.declare_ownership(alice.get_address(), { as: alice });
+    const new_owner = await fa2_nft.get_owner()
+    assert(owner.equals(new_owner));
+  });
+
+  it('Transfer ownership as non owner should fail', async () => {
+    await expect_to_fail(async () => {
+      await fa2_nft.declare_ownership(bob.get_address(), { as: bob });
+    }, fa2_nft.errors.INVALID_CALLER);
+  });
+
+  it('Transfer ownership as owner should succeed', async () => {
+    const owner = await fa2_nft.get_owner()
+    assert(owner.equals(alice.get_address()));
+    await fa2_nft.declare_ownership(bob.get_address(), { as: alice })
+    await fa2_nft.claim_ownership({ as: bob });
+    const new_owner = await fa2_nft.get_owner()
+    assert(new_owner.equals(bob.get_address()));
+  });
+});
+
