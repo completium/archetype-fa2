@@ -1,4 +1,4 @@
-archetype fa2nft(owner : address, permits : address) with metadata ""
+archetype fa2_nft(owner : address, permits : address) with metadata ""
 
 /* OWNERSHIP TRANSFER ------------------------------------------------------- */
 
@@ -161,8 +161,9 @@ function check_operator(txs : list<transfer_param>) : bool {
           (operator.contains((caller, td.token_id_dest, %from)) or
            operator_for_all.contains((caller, %from)))
         else
-          ledger.contains(td.token_id_dest);
-    end done
+          true;
+    end
+    done
   done;
   return res
 }
@@ -269,7 +270,7 @@ entry transfer_gasless (batch : list<gasless_param>) {
   }
 }
 
-entry %transfer(txs : list<transfer_param>) {
+entry %transfer (txs : list<transfer_param>) {
   require { fa2_r4 : is_not_paused() }
   effect {
     if not check_operator(txs) then begin

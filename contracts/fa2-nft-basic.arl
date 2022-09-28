@@ -5,7 +5,7 @@ asset ledger identified by ltoken to big_map {
   lowner     : address;
 }
 
-asset operator identified by oaddr otoken oowner {
+asset operator identified by oaddr otoken oowner to big_map {
   oaddr       : address;
   otoken      : nat;
   oowner      : address;

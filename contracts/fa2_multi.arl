@@ -1,4 +1,4 @@
-archetype fa2nft(owner : address, permits : address) with metadata ""
+archetype fa2_multi(owner : address, permits : address) with metadata ""
 
 /* OWNERSHIP TRANSFER ------------------------------------------------------- */
 
