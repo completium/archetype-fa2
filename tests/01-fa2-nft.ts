@@ -16,8 +16,6 @@ const bob   = get_account('bob');
 const carl  = get_account('carl');
 const user1 = get_account('bootstrap1');
 const user2 = get_account('bootstrap2');
-const user3 = get_account('bootstrap3');
-const user4 = get_account('bootstrap4');
 
 /* Endpoint ---------------------------------------------------------------- */
 
@@ -37,12 +35,6 @@ set_mockup_now(now)
 const amount       = new Nat(1);
 const token_id     = new Nat(0);
 const expiry       = new Nat(31556952)
-
-const testAmount_1 = new Nat(1);
-const testAmount_2 = new Nat(11);
-let alicePermitNb  = new Nat(0);
-let bobPermitNb    = new Nat(0);
-let carlPermitNb   = new Nat(0);
 
 const error_key_exists_ledger = pair_to_mich([string_to_mich("\"KEY_EXISTS\""), string_to_mich("\"ledger\"")])
 const error_permit_expired = (v : number) => pair_to_mich([string_to_mich("\"PERMIT_EXPIRED\""), new Nat(v).to_mich()])

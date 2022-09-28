@@ -456,7 +456,7 @@ export const deploy_balance_of_callback = async (): Promise<string> => {
         ex.prim_annot_to_mich_type("nat", ["%balance"])
     ], []), []));
 };
-export class Fa2multi {
+export class Fa2_multi {
     address: string | undefined;
     balance_of_callback_address: string | undefined;
     get_address(): ex.Address {
@@ -472,7 +472,7 @@ export class Fa2multi {
         throw new Error("Contract not initialised");
     }
     async deploy(owner: ex.Address, permits: ex.Address, params: Partial<ex.Parameters>) {
-        const address = await ex.deploy("./contracts/fa2multi.arl", {
+        const address = await ex.deploy("./contracts/fa2_multi.arl", {
             owner: owner.to_mich(),
             permits: permits.to_mich()
         }, params);
@@ -844,4 +844,4 @@ export class Fa2multi {
         CONTRACT_PAUSED: ex.string_to_mich("\"CONTRACT_PAUSED\"")
     };
 }
-export const fa2multi = new Fa2multi();
+export const fa2_multi = new Fa2_multi();
