@@ -6,22 +6,21 @@
     "tests": "tests"
   },
   "scripts": {
-    "test": "rm -rf ./build && npx tsc --outDir build && mocha --timeout 0 --slow 99999999999999999 ./build/tests/*.js",
-    "test-fungible": "rm -rf ./build && npx tsc --outDir build && mocha --timeout 0 --slow 99999999999999999 ./build/tests/00-fa2-fungible.js",
-    "test-nft": "rm -rf ./build && npx tsc --outDir build && mocha --timeout 0 --slow 99999999999999999 ./build/tests/01-fa2-nft.js",
-    "test-multi": "rm -rf ./build && npx tsc --outDir build && mocha --timeout 0 --slow 99999999999999999 ./build/tests/02-fa2-multi.js",
+    "test": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/*.ts",
+    "test-fungible": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/00-fa2-fungible.ts",
+    "test-nft": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/01-fa2-nft.ts",
+    "test-multi": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/02-fa2-multi.ts",
     "gen-binding": "completium-cli generate binding-ts _ --input-path ./contracts/ --output-path ./tests/binding/"
   },
   "dependencies": {
-    "@completium/completium-cli": "^0.4.23",
-    "@completium/experiment-ts": "^0.0.79",
-    "@taquito/taquito": "^13.0.0",
-    "bignumber.js": "^9.0.2",
-    "chai": "^4.3.4",
-    "mocha": "^10.0.0"
+    "@completium/archetype-ts-types": "^0.0.4",
+    "@completium/completium-cli": "^0.4.28",
+    "@completium/experiment-ts": "^0.0.82"
   },
   "devDependencies": {
+    "@types/expect": "^24.3.0",
     "@types/mocha": "^9.1.1",
+    "ts-mocha": "^10.0.0",
     "typescript": "^4.7.4"
   },
   "completium": {

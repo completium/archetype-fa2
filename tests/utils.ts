@@ -1,4 +1,5 @@
-import { list_to_mich_type, list_to_mich, prim_annot_to_mich_type, Bytes, blake2b, mich_array_to_mich, Address, Or, Account, expect_to_fail, get_account, Nat, Option, option_to_mich_type, pack, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, set_mockup, set_mockup_now, set_quiet, sign, string_to_mich, Signature } from '@completium/experiment-ts'
+import { list_to_mich_type, list_to_mich, prim_annot_to_mich_type, Bytes, mich_array_to_mich, Address, Or, Nat, Option, option_to_mich_type, pair_array_to_mich_type, pair_to_mich, pair_to_mich_type, prim_to_mich_type, string_to_mich, Signature } from '@completium/archetype-ts-types'
+import { blake2b, Account, expect_to_fail, get_account, pack, set_mockup, set_mockup_now, set_quiet, sign } from '@completium/experiment-ts'
 
 import { transfer_param, transfer_param_mich_type } from './binding/fa2_fungible'
 
