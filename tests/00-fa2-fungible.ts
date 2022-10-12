@@ -850,7 +850,7 @@ describe('[FA2 fungible] Balance of', async () => {
 
     assert(res.length == 1)
     assert((new Nat(0)).equals(res[0].balance_),                "Invalid balance amount")
-    assert(user4.get_address().equals(res[0].request.bo_owner), "Invalid address")
+    assert(user5.get_address().equals(res[0].request.bo_owner), "Invalid address")
   });
 
 });
