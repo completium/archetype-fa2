@@ -699,7 +699,7 @@ describe('[FA2 fungible] Burn', async () => {
     assert(balance_user1_after?.plus(amount).equals(balance_user1_before ? balance_user1_before : new Nat(0)), "Invalid value")
   });
 
-  it('Burn tokens with more tokens owned should failed', async () => {
+  it('Burn tokens with more tokens owned should fail', async () => {
     const balance_carl_before = await fa2_fungible.get_ledger_value(carl.get_address())
     assert(balance_carl_before?.equals(new Nat(500)), "Invalid amount")
 
@@ -846,7 +846,7 @@ describe('[FA2 fungible] Balance of', async () => {
   });
 
   it('Call balance of with unknown address', async () => {
-    const res = await fa2_fungible.balance_of([new balance_of_request(user4.get_address(), token_id)], {})
+    const res = await fa2_fungible.balance_of([new balance_of_request(user5.get_address(), token_id)], {})
 
     assert(res.length == 1)
     assert((new Nat(0)).equals(res[0].balance_),                "Invalid balance amount")

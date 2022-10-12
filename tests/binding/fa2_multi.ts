@@ -834,6 +834,7 @@ export class Fa2_multi {
         fa2_r5: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r5\"")]),
         INVALID_CALLER: att.string_to_mich("\"INVALID_CALLER\""),
         fa2_r4: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r4\"")]),
+        SIGNER_NOT_FROM: att.string_to_mich("\"SIGNER_NOT_FROM\""),
         fa2_r3: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r3\"")]),
         fa2_r2: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r2\"")]),
         CALLER_NOT_OWNER: att.string_to_mich("\"CALLER_NOT_OWNER\""),

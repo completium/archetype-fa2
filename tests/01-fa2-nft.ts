@@ -48,16 +48,16 @@ const get_ref_user_permits = (counter : Nat, data : Bytes, expiry : Nat, now : D
 
 /* Scenarios --------------------------------------------------------------- */
 
-describe('[FA2 fungible] Contracts deployment', async () => {
+describe('[FA2 NFT] Contracts deployment', async () => {
   it('Permits contract deployment should succeed', async () => {
     await permits.deploy( alice.get_address(), { as: alice })
   });
-  it('FA2 fungible contract deployment should succeed', async () => {
+  it('FA2 NFT contract deployment should succeed', async () => {
     await fa2_nft.deploy(alice.get_address(), permits.get_address(), { as: alice })
   });
 });
 
-describe('[FA2 fungible] Contract configuration', async () => {
+describe('[FA2 NFT] Contract configuration', async () => {
   it("Add FA2 as permit consumer", async () => {
     await permits.manage_consumer(new add(fa2_nft.get_address()),  { as: alice })
   })
@@ -572,7 +572,7 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
     });
 });
 
-describe('[FA2 fungible] Set metadata', async () => {
+describe('[FA2 NFT] Set metadata', async () => {
   it('Set metadata with empty content should succeed', async () => {
     const metadata_before = await fa2_nft.get_metadata_value("key")
     assert(metadata_before == undefined);
@@ -746,7 +746,7 @@ describe('[FA2 NFT] Burn', async () => {
   });
 });
 
-describe('[FA2 fungible] Pause', async () => {
+describe('[FA2 NFT] Pause', async () => {
   it('Set FA2 on pause should succeed', async () => {
     await fa2_nft.pause({ as: alice });
     const is_paused = await fa2_nft.get_paused()
@@ -841,7 +841,7 @@ describe('[FA2 fungible] Pause', async () => {
   });
 });
 
-describe('[FA2 fungible] Transfer ownership', async () => {
+describe('[FA2 NFT] Transfer ownership', async () => {
 
   it('Transfer ownership when contract is paused should succeed', async () => {
     const owner = await fa2_nft.get_owner()
