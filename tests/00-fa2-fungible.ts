@@ -19,6 +19,7 @@ const user1 = get_account('bootstrap1');
 const user2 = get_account('bootstrap2');
 const user3 = get_account('bootstrap3');
 const user4 = get_account('bootstrap4');
+const user5 = get_account('bootstrap5');
 
 /* Endpoint ---------------------------------------------------------------- */
 
@@ -435,7 +436,36 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     assert(balance_user2_after?.equals(new Nat(1)), "Invalid amount user2")
   });
 
-  it('Transfer gasless', async () => {
+  it('Transfer tokens gasless with from different signer should fail', async () => {
+    await fa2_fungible.mint(user4.get_address(), new Nat(1), { as: alice })
+
+    const amount = new Nat(1);
+    const permit = await permits.get_permits_value(user4.get_address())
+    const counter = permit?.counter
+    const balance_user4_before = await fa2_fungible.get_ledger_value(user4.get_address())
+    const balance_user5_before = await fa2_fungible.get_ledger_value(user5.get_address())
+    assert(balance_user4_before?.equals(new Nat(1)), "Invalid amount user4")
+    assert(balance_user5_before == undefined, "Invalid amount user5")
+
+    const tps = [new transfer_param(user4.get_address(),
+      [ new transfer_destination(user1.get_address(), token_id, amount)
+    ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const after_permit_data = await get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await user3.sign(after_permit_data)
+
+    await expect_to_fail(async () => {
+        await fa2_fungible.transfer_gasless([
+            new gasless_param(tps, user3.get_public_key(), sig)
+          ], { as : user3 }
+        )
+    }, fa2_fungible.errors.SIGNER_NOT_FROM);
+  });
+
+  it('Transfer gasless should succed', async () => {
     const amount = new Nat(1);
     const permit = await permits.get_permits_value(user2.get_address())
     const counter = permit?.counter
@@ -463,7 +493,6 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     assert(balance_user1_after?.equals(new Nat(1)), "Invalid amount after user1")
     assert(balance_user2_after == undefined, "Invalid amount after user2")
   });
-
 });
 
 
