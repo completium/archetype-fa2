@@ -172,76 +172,6 @@ export const balance_of_response_mich_type: att.MichelineType = att.pair_array_t
     ], ["%request"]),
     att.prim_annot_to_mich_type("nat", ["%balance"])
 ], []);
-export const mich_to_transfer_destination = (v: att.Micheline, collapsed: boolean = false): transfer_destination => {
-    let fields: att.Micheline[] = [];
-    if (collapsed) {
-        fields = att.mich_to_pairs(v);
-    }
-    else {
-        fields = att.annotated_mich_to_array(v, transfer_destination_mich_type);
-    }
-    return new transfer_destination(att.mich_to_address(fields[0]), att.mich_to_nat(fields[1]), att.mich_to_nat(fields[2]));
-};
-export const mich_to_transfer_param = (v: att.Micheline, collapsed: boolean = false): transfer_param => {
-    let fields: att.Micheline[] = [];
-    if (collapsed) {
-        fields = att.mich_to_pairs(v);
-    }
-    else {
-        fields = att.annotated_mich_to_array(v, transfer_param_mich_type);
-    }
-    return new transfer_param(att.mich_to_address(fields[0]), att.mich_to_list(fields[1], x => { return mich_to_transfer_destination(x, collapsed); }));
-};
-export const mich_to_part = (v: att.Micheline, collapsed: boolean = false): part => {
-    let fields: att.Micheline[] = [];
-    if (collapsed) {
-        fields = att.mich_to_pairs(v);
-    }
-    else {
-        fields = att.annotated_mich_to_array(v, part_mich_type);
-    }
-    return new part(att.mich_to_address(fields[0]), att.mich_to_nat(fields[1]));
-};
-export const mich_to_operator_param = (v: att.Micheline, collapsed: boolean = false): operator_param => {
-    let fields: att.Micheline[] = [];
-    if (collapsed) {
-        fields = att.mich_to_pairs(v);
-    }
-    else {
-        fields = att.annotated_mich_to_array(v, operator_param_mich_type);
-    }
-    return new operator_param(att.mich_to_address(fields[0]), att.mich_to_address(fields[1]), att.mich_to_nat(fields[2]));
-};
-export const mich_to_gasless_param = (v: att.Micheline, collapsed: boolean = false): gasless_param => {
-    let fields: att.Micheline[] = [];
-    if (collapsed) {
-        fields = att.mich_to_pairs(v);
-    }
-    else {
-        fields = att.annotated_mich_to_array(v, gasless_param_mich_type);
-    }
-    return new gasless_param(att.mich_to_list(fields[0], x => { return mich_to_transfer_param(x, collapsed); }), att.mich_to_key(fields[1]), att.mich_to_signature(fields[2]));
-};
-export const mich_to_balance_of_request = (v: att.Micheline, collapsed: boolean = false): balance_of_request => {
-    let fields: att.Micheline[] = [];
-    if (collapsed) {
-        fields = att.mich_to_pairs(v);
-    }
-    else {
-        fields = att.annotated_mich_to_array(v, balance_of_request_mich_type);
-    }
-    return new balance_of_request(att.mich_to_address(fields[0]), att.mich_to_nat(fields[1]));
-};
-export const mich_to_balance_of_response = (v: att.Micheline, collapsed: boolean = false): balance_of_response => {
-    let fields: att.Micheline[] = [];
-    if (collapsed) {
-        fields = att.mich_to_pairs(v);
-    }
-    else {
-        fields = att.annotated_mich_to_array(v, balance_of_response_mich_type);
-    }
-    return new balance_of_response(mich_to_balance_of_request(fields[0], collapsed), att.mich_to_nat(fields[1]));
-};
 export type token_metadata_key = att.Nat;
 export type ledger_key = att.Nat;
 export type royalties_key = att.Nat;
@@ -330,7 +260,7 @@ export class operator_for_all_value implements att.ArchetypeType {
 }
 export const token_metadata_value_mich_type: att.MichelineType = att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("nat", ["%token_id"]),
-    att.pair_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", []))
+    att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", []), ["%token_info"])
 ], []);
 export const ledger_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("address", []);
 export const royalties_value_mich_type: att.MichelineType = att.list_annot_to_mich_type(att.pair_array_to_mich_type([
@@ -339,28 +269,6 @@ export const royalties_value_mich_type: att.MichelineType = att.list_annot_to_mi
 ], []), []);
 export const operator_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("unit", []);
 export const operator_for_all_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("unit", []);
-export const mich_to_token_metadata_value = (v: att.Micheline, collapsed: boolean = false): token_metadata_value => {
-    let fields: att.Micheline[] = [];
-    if (collapsed) {
-        fields = att.mich_to_pairs(v);
-    }
-    else {
-        fields = att.annotated_mich_to_array(v, token_metadata_value_mich_type);
-    }
-    return new token_metadata_value(att.mich_to_nat(fields[0]), att.mich_to_map(fields[1], (x, y) => [att.mich_to_string(x), att.mich_to_bytes(y)]));
-};
-export const mich_to_ledger_value = (v: att.Micheline, collapsed: boolean = false): ledger_value => {
-    return att.mich_to_address(v);
-};
-export const mich_to_royalties_value = (v: att.Micheline, collapsed: boolean = false): royalties_value => {
-    return att.mich_to_list(v, x => { return mich_to_part(x, collapsed); });
-};
-export const mich_to_operator_value = (v: att.Micheline, collapsed: boolean = false): operator_value => {
-    throw new Error("mich_to_operator_value should not be called");
-};
-export const mich_to_operator_for_all_value = (v: att.Micheline, collapsed: boolean = false): operator_for_all_value => {
-    throw new Error("mich_to_operator_for_all_value should not be called");
-};
 export type token_metadata_container = Array<[
     token_metadata_key,
     token_metadata_value
@@ -381,26 +289,26 @@ export type operator_for_all_container = Array<[
     operator_for_all_key,
     operator_for_all_value
 ]>;
-export const token_metadata_container_mich_type: att.MichelineType = att.pair_to_mich_type("big_map", att.prim_annot_to_mich_type("nat", []), att.pair_array_to_mich_type([
+export const token_metadata_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("big_map", att.prim_annot_to_mich_type("nat", []), att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("nat", ["%token_id"]),
-    att.pair_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", []))
-], []));
-export const ledger_container_mich_type: att.MichelineType = att.pair_to_mich_type("big_map", att.prim_annot_to_mich_type("nat", []), att.prim_annot_to_mich_type("address", []));
-export const royalties_container_mich_type: att.MichelineType = att.pair_to_mich_type("big_map", att.prim_annot_to_mich_type("nat", []), att.list_annot_to_mich_type(att.pair_array_to_mich_type([
+    att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", []), ["%token_info"])
+], []), []);
+export const ledger_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("big_map", att.prim_annot_to_mich_type("nat", []), att.prim_annot_to_mich_type("address", []), []);
+export const royalties_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("big_map", att.prim_annot_to_mich_type("nat", []), att.list_annot_to_mich_type(att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("address", ["%part_account"]),
     att.prim_annot_to_mich_type("nat", ["%part_value"])
-], []), []));
-export const operator_container_mich_type: att.MichelineType = att.pair_to_mich_type("big_map", att.pair_array_to_mich_type([
+], []), []), []);
+export const operator_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("big_map", att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("address", ["%oaddr"]),
     att.pair_array_to_mich_type([
         att.prim_annot_to_mich_type("nat", ["%otoken"]),
         att.prim_annot_to_mich_type("address", ["%oowner"])
     ], [])
-], []), att.prim_annot_to_mich_type("unit", []));
-export const operator_for_all_container_mich_type: att.MichelineType = att.pair_to_mich_type("big_map", att.pair_array_to_mich_type([
+], []), att.prim_annot_to_mich_type("unit", []), []);
+export const operator_for_all_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("big_map", att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("address", ["%fa_oaddr"]),
     att.prim_annot_to_mich_type("address", ["%fa_oowner"])
-], []), att.prim_annot_to_mich_type("unit", []));
+], []), att.prim_annot_to_mich_type("unit", []), []);
 const declare_ownership_arg_to_mich = (candidate: att.Address): att.Micheline => {
     return candidate.to_mich();
 }
@@ -416,7 +324,7 @@ const unpause_arg_to_mich = (): att.Micheline => {
 const set_metadata_arg_to_mich = (k: string, d: att.Option<att.Bytes>): att.Micheline => {
     return att.pair_to_mich([
         att.string_to_mich(k),
-        d.to_mich()
+        d.to_mich((x => { return x.to_mich(); }))
     ]);
 }
 const set_token_metadata_arg_to_mich = (tid: att.Nat, tdata: Array<[
@@ -437,7 +345,7 @@ const set_permits_arg_to_mich = (p: att.Address): att.Micheline => {
 }
 const update_operators_arg_to_mich = (upl: Array<att.Or<operator_param, operator_param>>): att.Micheline => {
     return att.list_to_mich(upl, x => {
-        return x.to_mich();
+        return x.to_mich((x => { return x.to_mich(); }), (x => { return x.to_mich(); }));
     });
 }
 const update_operators_for_all_arg_to_mich = (upl: Array<update_for_all_op>): att.Micheline => {
@@ -488,7 +396,7 @@ const balance_of_arg_to_mich = (requests: Array<balance_of_request>): att.Michel
 const view_get_royalties_arg_to_mich = (tokenId: att.Nat): att.Micheline => {
     return tokenId.to_mich();
 }
-export const deploy_balance_of_callback = async (): Promise<string> => {
+export const deploy_balance_of_callback = async (): Promise<att.DeployResult> => {
     return await ex.deploy_callback("balance_of", att.list_annot_to_mich_type(att.pair_array_to_mich_type([
         att.pair_array_to_mich_type([
             att.prim_annot_to_mich_type("address", ["%owner"]),
@@ -499,6 +407,9 @@ export const deploy_balance_of_callback = async (): Promise<string> => {
 };
 export class Fa2_nft {
     address: string | undefined;
+    constructor(address: string | undefined = undefined) {
+        this.address = address;
+    }
     balance_of_callback_address: string | undefined;
     get_address(): att.Address {
         if (undefined != this.address) {
@@ -513,12 +424,12 @@ export class Fa2_nft {
         throw new Error("Contract not initialised");
     }
     async deploy(owner: att.Address, permits: att.Address, params: Partial<ex.Parameters>) {
-        const address = await ex.deploy("./contracts/fa2_nft.arl", {
+        const address = (await ex.deploy("./contracts/fa2_nft.arl", {
             owner: owner.to_mich(),
             permits: permits.to_mich()
-        }, params);
+        }, params)).address;
         this.address = address;
-        this.balance_of_callback_address = await deploy_balance_of_callback();
+        this.balance_of_callback_address = (await deploy_balance_of_callback()).address;
     }
     async declare_ownership(candidate: att.Address, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
@@ -716,8 +627,8 @@ export class Fa2_nft {
         if (this.address != undefined) {
             const mich = await ex.exec_view(this.get_address(), "get_royalties", view_get_royalties_arg_to_mich(tokenId), params);
             const res: Array<part> = [];
-            for (let i = 0; i < mich.length; i++) {
-                res.push((x => { return new part((x => { return new att.Address(x); })(x.part_account), (x => { return new att.Nat(x); })(x.part_value)); })(mich[i]));
+            for (let i = 0; i < mich.value.length; i++) {
+                res.push((x => { return new part((x => { return new att.Address(x); })(x.part_account), (x => { return new att.Nat(x); })(x.part_value)); })(mich.value[i]));
             }
             return res;
         }
@@ -747,16 +658,21 @@ export class Fa2_nft {
     async get_paused(): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            return storage.paused;
+            return storage.paused.prim ? (storage.paused.prim == "True" ? true : false) : storage.paused;
         }
         throw new Error("Contract not initialised");
     }
     async get_token_metadata_value(key: token_metadata_key): Promise<token_metadata_value | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.token_metadata), key.to_mich(), token_metadata_key_mich_type), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.token_metadata), key.to_mich(), token_metadata_key_mich_type, token_metadata_value_mich_type), collapsed = true;
             if (data != undefined) {
-                return mich_to_token_metadata_value(data, true);
+                return new token_metadata_value((x => { return new att.Nat(x); })(data.token_id), (x => { let res: Array<[
+                    string,
+                    att.Bytes
+                ]> = []; for (let e of x.entries()) {
+                    res.push([(x => { return x; })(e[0]), (x => { return new att.Bytes(x); })(e[1])]);
+                } return res; })(data.token_info));
             }
             else {
                 return undefined;
@@ -767,7 +683,7 @@ export class Fa2_nft {
     async has_token_metadata_value(key: token_metadata_key): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.token_metadata), key.to_mich(), token_metadata_key_mich_type), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.token_metadata), key.to_mich(), token_metadata_key_mich_type, token_metadata_value_mich_type), collapsed = true;
             if (data != undefined) {
                 return true;
             }
@@ -780,9 +696,9 @@ export class Fa2_nft {
     async get_ledger_value(key: ledger_key): Promise<ledger_value | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.ledger), key.to_mich(), ledger_key_mich_type), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.ledger), key.to_mich(), ledger_key_mich_type, ledger_value_mich_type), collapsed = true;
             if (data != undefined) {
-                return mich_to_ledger_value(data, true);
+                return new att.Address(data);
             }
             else {
                 return undefined;
@@ -793,7 +709,7 @@ export class Fa2_nft {
     async has_ledger_value(key: ledger_key): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.ledger), key.to_mich(), ledger_key_mich_type), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.ledger), key.to_mich(), ledger_key_mich_type, ledger_value_mich_type), collapsed = true;
             if (data != undefined) {
                 return true;
             }
@@ -806,9 +722,13 @@ export class Fa2_nft {
     async get_royalties_value(key: royalties_key): Promise<royalties_value | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.royalties), key.to_mich(), royalties_key_mich_type), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.royalties), key.to_mich(), royalties_key_mich_type, royalties_value_mich_type), collapsed = true;
             if (data != undefined) {
-                return mich_to_royalties_value(data, true);
+                const res: Array<part> = [];
+                for (let i = 0; i < data.length; i++) {
+                    res.push((x => { return new part((x => { return new att.Address(x); })(x.part_account), (x => { return new att.Nat(x); })(x.part_value)); })(data[i]));
+                }
+                return res;
             }
             else {
                 return undefined;
@@ -819,7 +739,7 @@ export class Fa2_nft {
     async has_royalties_value(key: royalties_key): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.royalties), key.to_mich(), royalties_key_mich_type), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.royalties), key.to_mich(), royalties_key_mich_type, royalties_value_mich_type), collapsed = true;
             if (data != undefined) {
                 return true;
             }
@@ -832,9 +752,9 @@ export class Fa2_nft {
     async get_operator_value(key: operator_key): Promise<operator_value | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.operator), key.to_mich(), operator_key_mich_type), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.operator), key.to_mich(), operator_key_mich_type, operator_value_mich_type), collapsed = true;
             if (data != undefined) {
-                return mich_to_operator_value(data, true);
+                return new operator_value();
             }
             else {
                 return undefined;
@@ -845,7 +765,7 @@ export class Fa2_nft {
     async has_operator_value(key: operator_key): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.operator), key.to_mich(), operator_key_mich_type), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.operator), key.to_mich(), operator_key_mich_type, operator_value_mich_type), collapsed = true;
             if (data != undefined) {
                 return true;
             }
@@ -858,9 +778,9 @@ export class Fa2_nft {
     async get_operator_for_all_value(key: operator_for_all_key): Promise<operator_for_all_value | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.operator_for_all), key.to_mich(), operator_for_all_key_mich_type), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.operator_for_all), key.to_mich(), operator_for_all_key_mich_type, operator_for_all_value_mich_type), collapsed = true;
             if (data != undefined) {
-                return mich_to_operator_for_all_value(data, true);
+                return new operator_for_all_value();
             }
             else {
                 return undefined;
@@ -871,7 +791,7 @@ export class Fa2_nft {
     async has_operator_for_all_value(key: operator_for_all_key): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.operator_for_all), key.to_mich(), operator_for_all_key_mich_type), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.operator_for_all), key.to_mich(), operator_for_all_key_mich_type, operator_for_all_value_mich_type), collapsed = true;
             if (data != undefined) {
                 return true;
             }
@@ -884,9 +804,9 @@ export class Fa2_nft {
     async get_metadata_value(key: string): Promise<att.Bytes | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.metadata), att.string_to_mich(key), att.prim_annot_to_mich_type("string", [])), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.metadata), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", [])), collapsed = true;
             if (data != undefined) {
-                return att.mich_to_bytes(data);
+                return new att.Bytes(data);
             }
             else {
                 return undefined;
@@ -897,7 +817,7 @@ export class Fa2_nft {
     async has_metadata_value(key: string): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.metadata), att.string_to_mich(key), att.prim_annot_to_mich_type("string", [])), collapsed = true;
+            const data = await ex.get_big_map_value(BigInt(storage.metadata), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", [])), collapsed = true;
             if (data != undefined) {
                 return true;
             }

@@ -13,9 +13,9 @@
     "gen-binding": "completium-cli generate binding-ts _ --input-path ./contracts/ --output-path ./tests/binding/"
   },
   "dependencies": {
-    "@completium/archetype-ts-types": "^0.0.4",
-    "@completium/completium-cli": "^0.4.28",
-    "@completium/experiment-ts": "^0.0.82"
+    "@completium/archetype-ts-types": "^0.0.11",
+    "@completium/completium-cli": "^0.4.43",
+    "@completium/experiment-ts": "^0.0.97"
   },
   "devDependencies": {
     "@types/expect": "^24.3.0",
