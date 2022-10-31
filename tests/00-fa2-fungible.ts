@@ -828,7 +828,7 @@ describe('[FA2 fungible] Balance of', async () => {
   it('Simple balance of', async () => {
     const balance_alice = await fa2_fungible.get_ledger_value(alice.get_address())
 
-    const res = await fa2_fungible.balance_of([new balance_of_request(alice.get_address(), token_id)], {})
+    const res = await fa2_fungible.balance_of([new balance_of_request(alice.get_address(), token_id)], {as: alice})
 
     assert(res.length == 1)
     assert(balance_alice?.equals(res[0].balance_),              "Invalid balance amount")
@@ -838,7 +838,7 @@ describe('[FA2 fungible] Balance of', async () => {
   it('Call balance of with other token id', async () => {
     const other_token_id = new Nat(1)
 
-    const res = await fa2_fungible.balance_of([new balance_of_request(alice.get_address(), other_token_id)], {})
+    const res = await fa2_fungible.balance_of([new balance_of_request(alice.get_address(), other_token_id)], {as: alice})
 
     assert(res.length == 1)
     assert((new Nat(0)).equals(res[0].balance_),                "Invalid balance amount")
@@ -846,7 +846,7 @@ describe('[FA2 fungible] Balance of', async () => {
   });
 
   it('Call balance of with unknown address', async () => {
-    const res = await fa2_fungible.balance_of([new balance_of_request(user5.get_address(), token_id)], {})
+    const res = await fa2_fungible.balance_of([new balance_of_request(user5.get_address(), token_id)], {as: alice})
 
     assert(res.length == 1)
     assert((new Nat(0)).equals(res[0].balance_),                "Invalid balance amount")

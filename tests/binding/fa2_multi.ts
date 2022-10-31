@@ -372,14 +372,14 @@ const balance_of_arg_to_mich = (requests: Array<balance_of_request>): att.Michel
         return x.to_mich();
     });
 }
-export const deploy_balance_of_callback = async (): Promise<att.DeployResult> => {
+export const deploy_balance_of_callback = async (params: Partial<ex.Parameters>): Promise<att.DeployResult> => {
     return await ex.deploy_callback("balance_of", att.list_annot_to_mich_type(att.pair_array_to_mich_type([
         att.pair_array_to_mich_type([
             att.prim_annot_to_mich_type("address", ["%owner"]),
             att.prim_annot_to_mich_type("nat", ["%token_id"])
         ], ["%request"]),
         att.prim_annot_to_mich_type("nat", ["%balance"])
-    ], []), []));
+    ], []), []), params);
 };
 export class Fa2_multi {
     address: string | undefined;
@@ -405,7 +405,7 @@ export class Fa2_multi {
             permits: permits.to_mich()
         }, params)).address;
         this.address = address;
-        this.balance_of_callback_address = (await deploy_balance_of_callback()).address;
+        this.balance_of_callback_address = (await deploy_balance_of_callback(params)).address;
     }
     async declare_ownership(candidate: att.Address, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
