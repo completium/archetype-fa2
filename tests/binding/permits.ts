@@ -397,9 +397,10 @@ export class Permits {
         throw new Error("Contract not initialised");
     }
     errors = {
-        p8: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"p8\"")]),
+        p10: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"p10\"")]),
         INVALID_CALLER: att.string_to_mich("\"INVALID_CALLER\""),
-        p6: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"p6\"")]),
+        p8: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"p8\"")]),
+        p7: att.string_to_mich("\"MAX_PERMITS_REACHED\""),
         p4: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"p4\"")]),
         r3: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"r3\"")]),
         r2: att.string_to_mich("\"EXPIRY_TOO_BIG\""),

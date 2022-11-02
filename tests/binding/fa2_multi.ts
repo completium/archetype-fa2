@@ -757,16 +757,19 @@ export class Fa2_multi {
         throw new Error("Contract not initialised");
     }
     errors = {
-        fa2_r7: att.string_to_mich("\"FA2_INSUFFICIENT_BALANCE\""),
-        fa2_r6: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r6\"")]),
+        fa2_r8: att.string_to_mich("\"FA2_INSUFFICIENT_BALANCE\""),
+        fa2_r7: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r7\"")]),
         FA2_INSUFFICIENT_BALANCE: att.string_to_mich("\"FA2_INSUFFICIENT_BALANCE\""),
+        NO_TRANSFER: att.string_to_mich("\"NO_TRANSFER\""),
+        fa2_r6: att.string_to_mich("\"FA2_TOKEN_UNDEFINED\""),
         fa2_r5: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r5\"")]),
         INVALID_CALLER: att.string_to_mich("\"INVALID_CALLER\""),
         fa2_r4: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r4\"")]),
         SIGNER_NOT_FROM: att.string_to_mich("\"SIGNER_NOT_FROM\""),
         fa2_r3: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r3\"")]),
+        FA2_TOKEN_UNDEFINED: att.string_to_mich("\"FA2_TOKEN_UNDEFINED\""),
         fa2_r2: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r2\"")]),
-        CALLER_NOT_OWNER: att.string_to_mich("\"CALLER_NOT_OWNER\""),
+        FA2_NOT_OWNER: att.string_to_mich("\"FA2_NOT_OWNER\""),
         fa2_r1: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r1\"")]),
         p_r1: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"p_r1\"")]),
         tmd_r1: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"tmd_r1\"")]),

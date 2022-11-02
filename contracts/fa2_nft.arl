@@ -5,6 +5,7 @@ archetype fa2_nft(owner : address, permits : address) with metadata ""
 variable owner_candidate : option<address> = none
 
 entry declare_ownership(candidate : address) {
+  no transfer
   called by owner
   effect {
     owner_candidate := some(candidate);
@@ -12,6 +13,7 @@ entry declare_ownership(candidate : address) {
 }
 
 entry claim_ownership() {
+  no transfer
   require {
     ownership_r1: (owner_candidate ? the = caller : false) otherwise "INVALID_CALLER"
   }
@@ -31,6 +33,7 @@ function is_not_paused() : bool {
 }
 
 entry pause() {
+  no transfer
   called by owner
   require {
     pausable_r1: is_not_paused()
@@ -41,6 +44,7 @@ entry pause() {
 }
 
 entry unpause() {
+  no transfer
   called by owner
   require {
     pausable_r2: paused otherwise "CONTRACT_NOT_PAUSED"
@@ -53,6 +57,7 @@ entry unpause() {
 /* METADATA ---------------------------------------------------------------- */
 
 entry set_metadata(k: string, d : option<bytes>) {
+  no transfer
   called by owner
   require { md_r1 : is_not_paused() }
   effect {
@@ -69,6 +74,7 @@ asset token_metadata to big_map {
 }
 
 entry set_token_metadata (tid : nat, tdata: map<string, bytes>) {
+  no transfer
   called by owner
   require { tmd_r1: is_not_paused() }
   effect {
@@ -79,6 +85,7 @@ entry set_token_metadata (tid : nat, tdata: map<string, bytes>) {
 /* PERMITS ----------------------------------------------------------------- */
 
 entry set_permits(p : address) {
+  no transfer
   called by owner
   require { p_r1 : is_not_paused() }
   effect {
@@ -88,10 +95,10 @@ entry set_permits(p : address) {
 
 /* ERRORS ----------------------------------------------------------------- */
 
-constant CALLER_NOT_OWNER         : string = "CALLER_NOT_OWNER"
 constant FA2_INSUFFICIENT_BALANCE : string = "FA2_INSUFFICIENT_BALANCE"
 constant FA2_INVALID_AMOUNT       : string = "FA2_INVALID_AMOUNT"
 constant FA2_NOT_OPERATOR         : string = "FA2_NOT_OPERATOR"
+constant FA2_NOT_OWNER            : string = "FA2_NOT_OWNER"
 constant FA2_TOKEN_UNDEFINED      : string = "FA2_TOKEN_UNDEFINED"
 constant SIGNER_NOT_FROM          : string = "SIGNER_NOT_FROM"
 
@@ -177,40 +184,17 @@ record operator_param {
   opp_token_id : nat
 } as ((owner, (operator, token_id)))
 
-/*enum update_op =
-| add_operator<operator_param>
-| remove_operator<operator_param>
-
-entry update_operators (upl : list<update_op>) {
-  require { r0 : is_not_paused() }
-  effect {
-    for up in upl do
-      match up with
-      | add_operator(param) ->
-        do_require(param.opp_owner = caller , CALLER_NOT_OWNER);
-        operator.put({
-          oaddr  = param.opp_operator;
-          otoken = param.opp_token_id;
-          oowner = param.opp_owner
-        })
-      | remove_operator(param) ->
-        do_require(param.opp_owner = caller , CALLER_NOT_OWNER);
-        operator.remove((param.opp_operator, param.opp_token_id, param.opp_owner))
-      end;
-    done;
-  }
-}*/
-
 entry update_operators (upl : list<or<operator_param, operator_param>>) {
+  no transfer
   require { fa2_r1 : is_not_paused() }
   effect {
     for up in upl do
       match up with
       | left(param) -> (* add *)
-        do_require(param.opp_owner = caller , CALLER_NOT_OWNER);
+        do_require(param.opp_owner = caller , FA2_NOT_OWNER);
         operator.put({param.opp_operator; param.opp_token_id; param.opp_owner})
       | right(param) -> (* remove *)
-        do_require(param.opp_owner = caller , CALLER_NOT_OWNER);
+        do_require(param.opp_owner = caller , FA2_NOT_OWNER);
         operator.remove((param.opp_operator, param.opp_token_id, param.opp_owner))
       end;
     done;
@@ -222,6 +206,7 @@ enum update_for_all_op =
 | remove_for_all<address>
 
 entry update_operators_for_all (upl : list<update_for_all_op>) {
+  no transfer
   require { fa2_r2 : is_not_paused() }
   effect {
     for up in upl do
@@ -236,6 +221,7 @@ entry update_operators_for_all (upl : list<update_for_all_op>) {
 }
 
 entry do_transfer(txs : list<transfer_param>) {
+  no transfer
   called by self_address
   effect {
     for tx in txs do
@@ -244,8 +230,11 @@ entry do_transfer(txs : list<transfer_param>) {
       for td in tds do begin
         const tokenid = td.token_id_dest;
         const towner ?= ledger[tokenid]?.lowner : FA2_TOKEN_UNDEFINED;
-        do_require(towner = %from and td.token_amount_dest = 1, FA2_INSUFFICIENT_BALANCE);
-        ledger.update(tokenid, { lowner = td.to_dest });
+        if td.token_amount_dest > 0
+        then begin
+          do_require(towner = %from and td.token_amount_dest = 1, FA2_INSUFFICIENT_BALANCE);
+          ledger.update(tokenid, { lowner = td.to_dest })
+        end
       end done
     done
   }
@@ -266,6 +255,7 @@ function check_owner(addr : address, txs : list<transfer_param>) : bool {
 }
 
 entry transfer_gasless (batch : list<gasless_param>) {
+  no transfer
   require { fa2_r3 : is_not_paused() }
   effect {
     for b in batch do
@@ -282,6 +272,7 @@ entry transfer_gasless (batch : list<gasless_param>) {
 }
 
 entry %transfer (txs : list<transfer_param>) {
+  no transfer
   require { fa2_r4 : is_not_paused() }
   effect {
     if not check_operator(txs) then begin
@@ -298,6 +289,7 @@ entry %transfer (txs : list<transfer_param>) {
 }
 
 entry mint (tow : address, tid : nat, tmd: map<string, bytes>, roy : list<part>) {
+  no transfer
   called by owner
   require { fa2_r5: is_not_paused() }
   effect {
@@ -311,12 +303,13 @@ entry mint (tow : address, tid : nat, tmd: map<string, bytes>, roy : list<part>)
 }
 
 entry burn(tid : nat) {
+  no transfer
   constant {
     token_owner ?is ledger[tid]?.lowner otherwise FA2_TOKEN_UNDEFINED;
   }
   require {
     fa2_r6: is_not_paused();
-    fa2_r7: token_owner = caller otherwise CALLER_NOT_OWNER
+    fa2_r7: token_owner = caller otherwise FA2_NOT_OWNER
   }
   effect {
     ledger.remove(tid);
@@ -337,10 +330,15 @@ record balance_of_response {
   balance_ : nat;
 } as ((request, balance))
 
+function get_balance(br : balance_of_request) : nat {
+  const token ?= ledger[br.btoken_id] : FA2_TOKEN_UNDEFINED;
+  return (token.lowner = br.bo_owner ? 1 : 0)
+}
+
 getter balance_of (requests : list<balance_of_request>) : list<balance_of_response> {
   return map(requests, br -> {
     request = br;
-    balance_ = (ledger[br.btoken_id] ? (the.lowner = br.bo_owner ? 1 : 0) : 0)
+    balance_ = get_balance(br)
   })
 }
 

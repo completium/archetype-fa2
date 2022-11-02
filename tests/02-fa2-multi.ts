@@ -14,8 +14,8 @@ import { add, permits, permits_value, user_permit } from './binding/permits';
 /* Accounts ----------------------------------------------------------------- */
 
 const alice = get_account('alice');
-const bob   = get_account('bob');
-const carl  = get_account('carl');
+const bob = get_account('bob');
+const carl = get_account('carl');
 const user1 = get_account('bootstrap1');
 const user2 = get_account('bootstrap2');
 
@@ -34,19 +34,19 @@ set_mockup_now(now)
 
 /* Constants & Utils ------------------------------------------------------- */
 
-const amount       = new Nat(1000);
-const token_id     = new Nat(0);
-const expiry       = new Nat(31556952)
+const amount = new Nat(1000);
+const token_id = new Nat(0);
+const expiry = new Nat(31556952)
 
 const testAmount_1 = new Nat(1);
 const testAmount_2 = new Nat(11);
-let alicePermitNb  = new Nat(0);
-let bobPermitNb    = new Nat(0);
-let carlPermitNb   = new Nat(0);
+let alicePermitNb = new Nat(0);
+let bobPermitNb = new Nat(0);
+let carlPermitNb = new Nat(0);
 
 const error_key_exists_ledger = pair_to_mich([string_to_mich("\"KEY_EXISTS\""), string_to_mich("\"ledger\"")])
-const error_permit_expired = (v : number) => pair_to_mich([string_to_mich("\"PERMIT_EXPIRED\""), new Nat(v).to_mich()])
-const get_ref_user_permits = (counter : Nat, data : Bytes, expiry : Nat, now : Date) => {
+const error_permit_expired = (v: number) => pair_to_mich([string_to_mich("\"PERMIT_EXPIRED\""), new Nat(v).to_mich()])
+const get_ref_user_permits = (counter: Nat, data: Bytes, expiry: Nat, now: Date) => {
   return new permits_value(counter, Option.None<Nat>(), [[
     blake2b(data),
     new user_permit(Option.Some<Nat>(expiry), new Date(now.getTime() - now.getMilliseconds() + (now.getMilliseconds() % 1000 == 0 ? 0 : 1000)))
@@ -57,7 +57,7 @@ const get_ref_user_permits = (counter : Nat, data : Bytes, expiry : Nat, now : D
 
 describe('[FA2 multi-asset] Contracts deployment', async () => {
   it('Permits contract deployment should succeed', async () => {
-    await permits.deploy( alice.get_address(), { as: alice })
+    await permits.deploy(alice.get_address(), { as: alice })
   });
   it('FA2 multi-asset contract deployment should succeed', async () => {
     await fa2_multi.deploy(alice.get_address(), permits.get_address(), { as: alice })
@@ -66,7 +66,7 @@ describe('[FA2 multi-asset] Contracts deployment', async () => {
 
 describe('[FA2 multi-asset] Contract configuration', async () => {
   it("Add FA2 as permit consumer", async () => {
-    await permits.manage_consumer(new add(fa2_multi.get_address()),  { as: alice })
+    await permits.manage_consumer(new add(fa2_multi.get_address()), { as: alice })
   })
 })
 
@@ -76,8 +76,8 @@ describe('[FA2 multi-asset] Minting', async () => {
       alice.get_address(),      // owner
       token_id,                 // token id
       amount, {                 // amount
-        as: alice,
-      }
+      as: alice,
+    }
     );
   });
 
@@ -87,8 +87,8 @@ describe('[FA2 multi-asset] Minting', async () => {
         bob.get_address(),      // owner
         token_id,               // token id
         amount, {               // amount
-          as: bob,
-        }
+        as: bob,
+      }
       );
     }, fa2_multi.errors.INVALID_CALLER);
   });
@@ -99,8 +99,8 @@ describe('[FA2 multi-asset] Minting', async () => {
         carl.get_address(),      // owner
         token_id,                // token id
         amount, {                // amount
-          as: bob,
-        }
+        as: bob,
+      }
       );
     }, fa2_multi.errors.INVALID_CALLER);
   });
@@ -115,8 +115,8 @@ describe('[FA2 multi-asset] Minting', async () => {
       carl.get_address(),      // owner
       a_token_id,           // token id
       amount, {                // amount
-        as: alice,
-      }
+      as: alice,
+    }
     );
 
     const balance_after = await fa2_multi.get_ledger_value(new ledger_key(carl.get_address(), a_token_id))
@@ -133,8 +133,8 @@ describe('[FA2 multi-asset] Minting', async () => {
       user1.get_address(),      // owner
       a_token_id,           // token id
       new Nat(2), {                // amount
-        as: alice,
-      }
+      as: alice,
+    }
     );
 
     const balance_after = await fa2_multi.get_ledger_value(new ledger_key(user1.get_address(), a_token_id))
@@ -152,9 +152,9 @@ describe('[FA2 multi-asset] Transfers', async () => {
     const balance_before_user2 = await fa2_multi.get_ledger_value(new ledger_key(user2.get_address(), a_token_id))
     assert(balance_before_user2 == undefined)
 
-    const tps = [new transfer_param(user1.get_address(), [ new transfer_destination(user2.get_address(), a_token_id, new Nat(1)) ])]
+    const tps = [new transfer_param(user1.get_address(), [new transfer_destination(user2.get_address(), a_token_id, new Nat(1))])]
 
-    await fa2_multi.transfer(tps, { as : user1 })
+    await fa2_multi.transfer(tps, { as: user1 })
 
     const balance_after_user1 = await fa2_multi.get_ledger_value(new ledger_key(user1.get_address(), a_token_id))
     assert(balance_after_user1?.equals(new Nat(1)))
@@ -162,3 +162,14 @@ describe('[FA2 multi-asset] Transfers', async () => {
     assert(balance_after_user2?.equals(new Nat(1)))
   })
 })
+
+describe('[FA2 multi-asset] Balance of', async () => {
+
+  it('Unknown token_id should fail', async () => {
+    const fake_token = new Nat(56)
+    await expect_to_fail(async () => {
+      await fa2_multi.balance_of([new balance_of_request(alice.get_address(), fake_token)], { as: alice })
+    }, fa2_multi.errors.FA2_TOKEN_UNDEFINED)
+  });
+
+});

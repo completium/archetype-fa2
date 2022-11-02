@@ -1,12 +1,18 @@
 archetype permits(owner : address) with metadata ""
 
+/* CONSTANTS ------------------------------------------------------------------ */
+
+constant MAX_NUMBER_PERMITS : nat = 20_000
+
 /* ERRORS ------------------------------------------------------------------ */
 
+constant DUP_PERMIT            : string = "DUP_PERMIT"
 constant EXPIRY_TOO_BIG        : string = "EXPIRY_TOO_BIG"
 constant USER_PERMIT_NOT_FOUND : string = "USER_PERMIT_NOT_FOUND"
 constant PERMIT_NOT_FOUND      : string = "PERMIT_NOT_FOUND"
 constant MISSIGNED             : string = "MISSIGNED"
 constant PERMIT_EXPIRED        : string = "PERMIT_EXPIRED"
+constant MAX_PERMITS_REACHED   : string = "MAX_PERMITS_REACHED"
 
 /* OWNERSHIP TRANSFER ------------------------------------------------------- */
 
@@ -167,7 +173,9 @@ entry permit(signer : key, sig : signature, data : bytes) {
   }
   require {
     p4: is_not_paused();
-    p5: check_signature(signer, sig, to_sign) otherwise (MISSIGNED, to_sign)
+    p5: check_signature(signer, sig, to_sign) otherwise (MISSIGNED, to_sign);
+    p6: (not (luser_permits.contains(permit_key))) otherwise (DUP_PERMIT, permit_key);
+    p7: luser_permits.length() < MAX_NUMBER_PERMITS otherwise MAX_PERMITS_REACHED
   }
   effect {
     permits.add_update(user, {
@@ -193,10 +201,10 @@ entry consume(user : address, data: bytes, err: string) {
    luser_permits ?is lpermit.user_permits[permit_key] otherwise err;
   }
   require {
-    p6: is_not_paused()
+    p8: is_not_paused()
   }
   fail if {
-    p7 : has_expired(luser_permits, signer_expiry) with (PERMIT_EXPIRED, ((luser_permits.created_at + (luser_permits.expiry ? the : signer_expiry) * 1s)))
+    p9 : has_expired(luser_permits, signer_expiry) with (PERMIT_EXPIRED, ((luser_permits.created_at + (luser_permits.expiry ? the : signer_expiry) * 1s)))
   }
   effect {
     permits[user].user_permits.remove(permit_key)
@@ -211,8 +219,8 @@ entry check(signer : key, sig : signature, data : bytes) {
     to_sign  is pack(((self_address, self_chain_id), (lcounter, data)));
   }
   require {
-    p8: is_not_paused();
-    p9: check_signature(signer, sig, to_sign) otherwise (MISSIGNED, to_sign)
+    p10: is_not_paused();
+    p11: check_signature(signer, sig, to_sign) otherwise (MISSIGNED, to_sign)
   }
   effect {
     permits.add_update(user, { counter = (lcounter + 1)});
