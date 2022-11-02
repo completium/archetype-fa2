@@ -36,6 +36,7 @@ set_mockup_now(now)
 
 const amount = new Nat(1000);
 const token_id = new Nat(0);
+const a_token_id = new Nat(1)
 const expiry = new Nat(31556952)
 
 const testAmount_1 = new Nat(1);
@@ -67,6 +68,11 @@ describe('[FA2 multi-asset] Contracts deployment', async () => {
 describe('[FA2 multi-asset] Contract configuration', async () => {
   it("Add FA2 as permit consumer", async () => {
     await permits.manage_consumer(new add(fa2_multi.get_address()), { as: alice })
+  })
+
+  it("Add token_id 0 & 1", async () => {
+    await fa2_multi.set_token_metadata(token_id, [["", new Bytes("")]], {as: alice})
+    await fa2_multi.set_token_metadata(a_token_id, [["", new Bytes("")]], {as: alice})
   })
 })
 
@@ -106,15 +112,13 @@ describe('[FA2 multi-asset] Minting', async () => {
   });
 
   it('Mint tokens as owner for someone else should succeed', async () => {
-    const a_token_id = new Nat(1)
-
     const balance_before = await fa2_multi.get_ledger_value(new ledger_key(carl.get_address(), a_token_id))
     assert(balance_before == undefined)
 
     await fa2_multi.mint(
-      carl.get_address(),      // owner
+      carl.get_address(),   // owner
       a_token_id,           // token id
-      amount, {                // amount
+      amount, {             // amount
       as: alice,
     }
     );
@@ -131,8 +135,8 @@ describe('[FA2 multi-asset] Minting', async () => {
 
     await fa2_multi.mint(
       user1.get_address(),      // owner
-      a_token_id,           // token id
-      new Nat(2), {                // amount
+      a_token_id,               // token id
+      new Nat(2), {             // amount
       as: alice,
     }
     );
