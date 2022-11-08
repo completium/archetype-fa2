@@ -304,7 +304,7 @@ entry %transfer (txs : list<transfer_param>) {
       match get_from(txs) with
       | some(%from) ->
         transfer 0tz to permits
-          call consume<address * bytes * string>((%from, pack(txs), FA2_NOT_OPERATOR))
+          call consume<address * bytes * string>((%from, blake2b(pack(txs)), FA2_NOT_OPERATOR))
       | none -> ()
       end
     end;

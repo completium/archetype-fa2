@@ -136,11 +136,10 @@ entry set_expiry(iv : option<nat>, ip : option<bytes>) {
   }
   effect {
     match ip with
-    | some(p) -> begin
-        const permit_key = blake2b(p);
+    | some(permit_key) -> begin
         if (iv ? the > 0 : true) then begin
           const up : user_permit ?=
-            caller_permit.user_permits[permit_key] : (PERMIT_NOT_FOUND, (caller, p));
+            caller_permit.user_permits[permit_key] : (PERMIT_NOT_FOUND, (caller, permit_key));
           permits[caller].user_permits.update(permit_key, some({ up with expiry = iv }))
         end else begin
           permits[caller].user_permits.remove(permit_key)
@@ -159,16 +158,15 @@ entry set_default_expiry(v : nat) {
   }
 }
 
-entry permit(signer : key, sig : signature, data : bytes) {
+entry permit(signer : key, sig : signature, permit_key : bytes) {
   constant {
-    permit_key    is blake2b(data);
     user          is key_to_address(signer);
     usr_permit    is permits[user] ?
                       (the.counter, the.user_permits) :
                       (0, make_map<bytes, user_permit>([]));
     lcounter      is usr_permit[0];
     luser_permits is usr_permit[1];
-    to_sign       is pack(((self_address, self_chain_id), (lcounter, data)));
+    to_sign       is pack(((self_address, self_chain_id), (lcounter, permit_key)));
     usr_expiry    is get_default_expiry(user);
   }
   require {
@@ -192,10 +190,9 @@ entry permit(signer : key, sig : signature, data : bytes) {
   }
 }
 
-entry consume(user : address, data: bytes, err: string) {
+entry consume(user : address, permit_key: bytes, err: string) {
   called by consumer
   constant {
-   permit_key     is blake2b(data);
    signer_expiry  is get_expiry(user, permit_key);
    lpermit       ?is permits[user]                    otherwise err;
    luser_permits ?is lpermit.user_permits[permit_key] otherwise err;

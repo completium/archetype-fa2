@@ -136,12 +136,12 @@ describe('[FA2 NFT] Add permit', async () => {
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      packed_transfer_params,
+      blake2b(packed_transfer_params),
       permits.get_address(),
       alice_permit_counter);
 
     await expect_to_fail(async () => {
-      await permits.permit(new Key(alice.pubk), wrong_sig, packed_transfer_params, { as: bob })
+      await permits.permit(new Key(alice.pubk), wrong_sig, blake2b(packed_transfer_params), { as: bob })
     }, get_missigned_error(permit_data))
 
   });
@@ -153,18 +153,18 @@ describe('[FA2 NFT] Add permit', async () => {
     const packed_transfer_params = get_packed_transfer_params(tps)
 
     const permit_data = get_transfer_permit_data(
-      packed_transfer_params,
+      blake2b(packed_transfer_params),
       permits.get_address(),
       alice_permit_counter);
 
     const wrong_permit_data = get_transfer_permit_data(
-      wrong_packed_transfer_params,
+      blake2b(wrong_packed_transfer_params),
       permits.get_address(),
       alice_permit_counter);
 
     await expect_to_fail(async () => {
       const sig = await alice.sign(permit_data)
-      await permits.permit(new Key(alice.pubk), sig, wrong_packed_transfer_params, { as: bob })
+      await permits.permit(new Key(alice.pubk), sig, blake2b(wrong_packed_transfer_params), { as: bob })
     }, get_missigned_error(wrong_permit_data));
   });
 
@@ -174,13 +174,13 @@ describe('[FA2 NFT] Add permit', async () => {
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(carl.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      packed_transfer_params,
+      blake2b(packed_transfer_params),
       permits.get_address(),
       alice_permit_counter);
 
     await expect_to_fail(async () => {
       const sig = await alice.sign(permit_data)
-      await permits.permit(new Key(bob.pubk), sig, packed_transfer_params, { as: bob })
+      await permits.permit(new Key(bob.pubk), sig, blake2b(packed_transfer_params), { as: bob })
     }, get_missigned_error(permit_data));
   });
 
@@ -189,11 +189,11 @@ describe('[FA2 NFT] Add permit', async () => {
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(carl.get_address(), one_token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      packed_transfer_params,
+      blake2b(packed_transfer_params),
       permits.get_address(),
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
-    await permits.permit(new Key(alice.pubk), sig, packed_transfer_params, { as: bob })
+    await permits.permit(new Key(alice.pubk), sig, blake2b(packed_transfer_params), { as: bob })
 
     const added_permit = await permits.get_permits_value(alice.get_address())
     assert(added_permit?.equals(get_ref_user_permits(new Nat(1), packed_transfer_params, expiry, now)))
@@ -205,19 +205,18 @@ describe('[FA2 NFT] Add permit', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(carl.get_address(), one_token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
-    const hash = blake2b(packed_transfer_params);
 
     assert(initial_permit?.equals(get_ref_user_permits(new Nat(1), packed_transfer_params, expiry, now)))
 
     const permit_data = get_transfer_permit_data(
-      packed_transfer_params,
+      blake2b(packed_transfer_params),
       permits.get_address(),
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
     await expect_to_fail(async () => {
-      await permits.permit(new Key(alice.pubk), sig, packed_transfer_params, { as: bob })
-    }, pair_to_mich([string_to_mich("DUP_PERMIT"), hash.to_mich()]));
+      await permits.permit(new Key(alice.pubk), sig, blake2b(packed_transfer_params), { as: bob })
+    }, pair_to_mich([string_to_mich("DUP_PERMIT"), blake2b(packed_transfer_params).to_mich()]));
   });
 
   // it('Expired permit are removed when a new permit is added should succeed', async () => {
@@ -298,17 +297,17 @@ describe('[FA2 NFT] Transfers', async () => {
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      packed_transfer_params,
+      blake2b(packed_transfer_params),
       permits.get_address(),
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
-    await permits.permit(new Key(alice.pubk), sig, packed_transfer_params, { as: carl })
+    await permits.permit(new Key(alice.pubk), sig, blake2b(packed_transfer_params), { as: carl })
 
     const alice_permit = await permits.get_permits_value(alice.get_address())
     const created_at = alice_permit?.user_permits[0][1].created_at
 
-    await permits.set_expiry(Option.Some<Nat>(new_expiry), Option.Some<Bytes>(packed_transfer_params), { as: alice })
+    await permits.set_expiry(Option.Some<Nat>(new_expiry), Option.Some<Bytes>(blake2b(packed_transfer_params)), { as: alice })
 
 
     set_mockup_now(new Date(now.getTime() + 3610 * 1000))
@@ -374,12 +373,12 @@ describe('[FA2 NFT] Transfers', async () => {
 
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      packed_transfer_params,
+      blake2b(packed_transfer_params),
       permits.get_address(),
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
-    await permits.permit(alice.get_public_key(), sig, packed_transfer_params, { as: carl })
+    await permits.permit(alice.get_public_key(), sig, blake2b(packed_transfer_params), { as: carl })
 
     const added_permits = await permits.get_permits_value(alice.get_address())
     const permits_count = added_permits?.user_permits.length
