@@ -124,17 +124,17 @@ const set_expiry_arg_to_mich = (iv: att.Option<att.Nat>, ip: att.Option<att.Byte
 const set_default_expiry_arg_to_mich = (v: att.Nat): att.Micheline => {
     return v.to_mich();
 }
-const permit_arg_to_mich = (signer: att.Key, sig: att.Signature, data: att.Bytes): att.Micheline => {
+const permit_arg_to_mich = (signer: att.Key, sig: att.Signature, permit_key: att.Bytes): att.Micheline => {
     return att.pair_to_mich([
         signer.to_mich(),
         sig.to_mich(),
-        data.to_mich()
+        permit_key.to_mich()
     ]);
 }
-const consume_arg_to_mich = (user: att.Address, data: att.Bytes, err: string): att.Micheline => {
+const consume_arg_to_mich = (user: att.Address, permit_key: att.Bytes, err: string): att.Micheline => {
     return att.pair_to_mich([
         user.to_mich(),
-        data.to_mich(),
+        permit_key.to_mich(),
         att.string_to_mich(err)
     ]);
 }
@@ -216,15 +216,15 @@ export class Permits {
         }
         throw new Error("Contract not initialised");
     }
-    async permit(signer: att.Key, sig: att.Signature, data: att.Bytes, params: Partial<ex.Parameters>): Promise<any> {
+    async permit(signer: att.Key, sig: att.Signature, permit_key: att.Bytes, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "permit", permit_arg_to_mich(signer, sig, data), params);
+            return await ex.call(this.address, "permit", permit_arg_to_mich(signer, sig, permit_key), params);
         }
         throw new Error("Contract not initialised");
     }
-    async consume(user: att.Address, data: att.Bytes, err: string, params: Partial<ex.Parameters>): Promise<any> {
+    async consume(user: att.Address, permit_key: att.Bytes, err: string, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
-            return await ex.call(this.address, "consume", consume_arg_to_mich(user, data, err), params);
+            return await ex.call(this.address, "consume", consume_arg_to_mich(user, permit_key, err), params);
         }
         throw new Error("Contract not initialised");
     }
@@ -282,15 +282,15 @@ export class Permits {
         }
         throw new Error("Contract not initialised");
     }
-    async get_permit_param(signer: att.Key, sig: att.Signature, data: att.Bytes, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_permit_param(signer: att.Key, sig: att.Signature, permit_key: att.Bytes, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "permit", permit_arg_to_mich(signer, sig, data), params);
+            return await ex.get_call_param(this.address, "permit", permit_arg_to_mich(signer, sig, permit_key), params);
         }
         throw new Error("Contract not initialised");
     }
-    async get_consume_param(user: att.Address, data: att.Bytes, err: string, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_consume_param(user: att.Address, permit_key: att.Bytes, err: string, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
-            return await ex.get_call_param(this.address, "consume", consume_arg_to_mich(user, data, err), params);
+            return await ex.get_call_param(this.address, "consume", consume_arg_to_mich(user, permit_key, err), params);
         }
         throw new Error("Contract not initialised");
     }

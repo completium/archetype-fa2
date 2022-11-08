@@ -272,6 +272,17 @@ const mint_arg_to_mich = (tow: att.Address, nbt: att.Nat): att.Micheline => {
 const burn_arg_to_mich = (nbt: att.Nat): att.Micheline => {
     return nbt.to_mich();
 }
+const permit_transfer_arg_to_mich = (txs: Array<transfer_param>, permit: att.Option<[
+    att.Key,
+    att.Signature
+]>): att.Micheline => {
+    return att.pair_to_mich([
+        att.list_to_mich(txs, x => {
+            return x.to_mich();
+        }),
+        permit.to_mich((x => { return att.pair_to_mich([x[0].to_mich(), x[1].to_mich()]); }))
+    ]);
+}
 const balance_of_arg_to_mich = (requests: Array<balance_of_request>): att.Micheline => {
     return att.list_to_mich(requests, x => {
         return x.to_mich();
@@ -393,6 +404,15 @@ export class Fa2_fungible {
         }
         throw new Error("Contract not initialised");
     }
+    async permit_transfer(txs: Array<transfer_param>, permit: att.Option<[
+        att.Key,
+        att.Signature
+    ]>, params: Partial<ex.Parameters>): Promise<any> {
+        if (this.address != undefined) {
+            return await ex.call(this.address, "permit_transfer", permit_transfer_arg_to_mich(txs, permit), params);
+        }
+        throw new Error("Contract not initialised");
+    }
     async get_declare_ownership_param(candidate: att.Address, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
             return await ex.get_call_param(this.address, "declare_ownership", declare_ownership_arg_to_mich(candidate), params);
@@ -471,6 +491,15 @@ export class Fa2_fungible {
     async get_burn_param(nbt: att.Nat, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
             return await ex.get_call_param(this.address, "burn", burn_arg_to_mich(nbt), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_permit_transfer_param(txs: Array<transfer_param>, permit: att.Option<[
+        att.Key,
+        att.Signature
+    ]>, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "permit_transfer", permit_transfer_arg_to_mich(txs, permit), params);
         }
         throw new Error("Contract not initialised");
     }
@@ -624,14 +653,15 @@ export class Fa2_fungible {
         throw new Error("Contract not initialised");
     }
     errors = {
+        SIGNER_NOT_FROM: att.string_to_mich("\"SIGNER_NOT_FROM\""),
+        fa2_r8: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r8\"")]),
+        NO_TRANSFER: att.string_to_mich("\"NO_TRANSFER\""),
         fa2_r7: att.string_to_mich("\"FA2_INSUFFICIENT_BALANCE\""),
         fa2_r6: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r6\"")]),
         FA2_INSUFFICIENT_BALANCE: att.string_to_mich("\"FA2_INSUFFICIENT_BALANCE\""),
-        NO_TRANSFER: att.string_to_mich("\"NO_TRANSFER\""),
         fa2_r5: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r5\"")]),
         INVALID_CALLER: att.string_to_mich("\"INVALID_CALLER\""),
         fa2_r4: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r4\"")]),
-        SIGNER_NOT_FROM: att.string_to_mich("\"SIGNER_NOT_FROM\""),
         fa2_r3: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"fa2_r3\"")]),
         FA2_TOKEN_UNDEFINED: att.string_to_mich("\"FA2_TOKEN_UNDEFINED\""),
         FA2_NOT_OWNER: att.string_to_mich("\"FA2_NOT_OWNER\""),

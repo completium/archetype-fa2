@@ -1,5 +1,5 @@
-import { Bytes, Key, Nat, Option, Or, pair_to_mich, Signature, string_to_mich } from '@completium/archetype-ts-types'
-import { blake2b, expect_to_fail, get_account, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
+import { Bytes, Key, MichelineType, Nat, Option, Or, pair_to_mich, Signature, string_to_mich } from '@completium/archetype-ts-types'
+import { blake2b, expect_to_fail, get_account, pack, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
 
 import { get_packed_transfer_params, get_transfer_permit_data, get_missigned_error, wrong_packed_transfer_params, wrong_sig } from './utils'
 
@@ -39,6 +39,38 @@ set_mockup_now(now)
 const token_id = new Nat(0)
 const amount = new Nat(123)
 const expiry = new Nat(31556952)
+
+const transfer_type: MichelineType = {
+  "prim": "list",
+  "annots": [],
+  "args": [
+    {
+      "prim": "pair",
+      "annots": [],
+      "args": [
+        { "prim": "address" },
+        {
+          "prim": "list",
+          "annots": [],
+          "args": [
+            {
+              "prim": "pair",
+              "annots": [],
+              "args": [
+                { "prim": "address" },
+                {
+                  "prim": "pair",
+                  "annots": [],
+                  "args": [{ "prim": "nat" }, { "prim": "nat" }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
 
 const get_ref_user_permits = (counter: Nat, data: Bytes, expiry: Nat, now: Date) => {
   return new permits_value(counter, Option.None<Nat>(), [[
@@ -493,6 +525,119 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
   });
 });
 
+describe('[FA2 fungible] Transfers one-step ', async () => {
+  it('Transfer one-step simple amount of token', async () => {
+    const permit = await permits.get_permits_value(user1.get_address())
+    const counter = permit?.counter
+    const amount = new Nat(1);
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before?.equals(new Nat(1)), "Invalid amount user1")
+    assert(balance_user2_before == undefined, "Invalid amount user2")
+    const tps = [new transfer_param(user1.get_address(),
+      [new transfer_destination(user2.get_address(), token_id, amount)])
+    ]
+    const packed_transfer_params = pack([tps[0].to_mich()], transfer_type);
+    const permit_data = get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await user1.sign(permit_data);
+    const lpermit = Option.Some<[Key, Signature]>([user1.get_public_key(), sig]);
+    await fa2_fungible.permit_transfer(tps, lpermit, { as: user3 })
+
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after == undefined, "Invalid amount after user1")
+    assert(balance_user2_after?.equals(new Nat(1)), "Invalid amount after user2")
+  });
+
+  it('Transfer one-step a token from another user with wrong permit should fail', async () => {
+    const amount = new Nat(1);
+    const permit = await permits.get_permits_value(user2.get_address())
+    const counter = permit?.counter
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before == undefined, "Invalid amount user1")
+    assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
+
+    const tps = [new transfer_param(user2.get_address(),
+      [new transfer_destination(user1.get_address(), token_id, amount)
+      ])]
+    const packed_transfer_params = pack([tps[0].to_mich()], transfer_type);
+    const permit_data = get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await user1.sign(permit_data)
+    const lpermit = Option.Some<[Key, Signature]>([user2.get_public_key(), sig]);
+
+    await expect_to_fail(async () => {
+      await fa2_fungible.permit_transfer(tps, lpermit, { as: user3 })
+    }, get_missigned_error(permit_data));
+
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after == undefined, "Invalid amount user1")
+    assert(balance_user2_after?.equals(new Nat(1)), "Invalid amount user2")
+  });
+
+  it('Transfer one-step tokens gasless with from different signer should fail', async () => {
+    // await fa2_fungible.mint(user4.get_address(), new Nat(1), { as: alice })
+
+    const amount = new Nat(1);
+    const permit = await permits.get_permits_value(user4.get_address())
+    const counter = permit?.counter
+    const balance_user4_before = await fa2_fungible.get_ledger_value(user4.get_address())
+    const balance_user5_before = await fa2_fungible.get_ledger_value(user5.get_address())
+    assert(balance_user4_before?.equals(new Nat(1)), "Invalid amount user4")
+    assert(balance_user5_before == undefined, "Invalid amount user5")
+
+    const tps = [new transfer_param(user4.get_address(),
+      [new transfer_destination(user1.get_address(), token_id, amount)
+      ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const after_permit_data = get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await user3.sign(after_permit_data)
+    const lpermit = Option.Some<[Key, Signature]>([user3.get_public_key(), sig]);
+
+    await expect_to_fail(async () => {
+      await fa2_fungible.permit_transfer(tps, lpermit, { as: user3 })
+    }, fa2_fungible.errors.SIGNER_NOT_FROM);
+  });
+
+  it('Transfer one-step should succed', async () => {
+    const amount = new Nat(1);
+    const permit = await permits.get_permits_value(user2.get_address())
+    const counter = permit?.counter
+    const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_before == undefined, "Invalid amount user1")
+    assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
+
+    const tps = [new transfer_param(user2.get_address(),
+      [new transfer_destination(user1.get_address(), token_id, amount)
+      ])]
+    const packed_transfer_params = get_packed_transfer_params(tps)
+    const after_permit_data = await get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      counter);
+    const sig = await user2.sign(after_permit_data)
+    const lpermit = Option.Some<[Key, Signature]>([user2.get_public_key(), sig]);
+
+    await fa2_fungible.permit_transfer(tps, lpermit, { as: user3 })
+
+    const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
+    const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
+    assert(balance_user1_after?.equals(new Nat(1)), "Invalid amount after user1")
+    assert(balance_user2_after == undefined, "Invalid amount after user2")
+  });
+
+});
 
 describe('[FA2 fungible] Consume permit', async () => {
 
