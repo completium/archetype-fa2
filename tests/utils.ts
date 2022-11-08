@@ -29,7 +29,7 @@ export const get_transfer_permit_data = (ptps : Bytes, contract : Address, permi
   const chain_id = 'NetXynUjJNZm7wi';
   const permit_data = mich_array_to_mich([
     mich_array_to_mich([ contract.to_mich(), string_to_mich(chain_id) ]),
-    mich_array_to_mich([ counter.to_mich(), ptps.to_mich() ])
+    mich_array_to_mich([ counter.to_mich(), blake2b(ptps).to_mich() ])
   ])
   return pack(permit_data, permit_data_type);
 }

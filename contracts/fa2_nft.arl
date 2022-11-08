@@ -265,7 +265,7 @@ entry transfer_gasless (batch : list<gasless_param>) {
       const pkh_signer = key_to_address(pk);
       do_require(check_owner(pkh_signer, txs), SIGNER_NOT_FROM);
       transfer 0tz to permits
-        call check<key * signature * bytes>((pk, sig, pack(txs)));
+        call check<key * signature * bytes>((pk, sig, blake2b(pack(txs))));
       transfer 0tz to entry self.do_transfer(txs);
     done
   }

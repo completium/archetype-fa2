@@ -40,38 +40,6 @@ const token_id = new Nat(0)
 const amount = new Nat(123)
 const expiry = new Nat(31556952)
 
-const transfer_type: MichelineType = {
-  "prim": "list",
-  "annots": [],
-  "args": [
-    {
-      "prim": "pair",
-      "annots": [],
-      "args": [
-        { "prim": "address" },
-        {
-          "prim": "list",
-          "annots": [],
-          "args": [
-            {
-              "prim": "pair",
-              "annots": [],
-              "args": [
-                { "prim": "address" },
-                {
-                  "prim": "pair",
-                  "annots": [],
-                  "args": [{ "prim": "nat" }, { "prim": "nat" }]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-};
-
 const get_ref_user_permits = (counter: Nat, data: Bytes, expiry: Nat, now: Date) => {
   return new permits_value(counter, Option.None<Nat>(), [[
     blake2b(data),
@@ -193,7 +161,7 @@ describe('[FA2 fungible] Add permit', async () => {
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      blake2b(packed_transfer_params),
+      packed_transfer_params,
       permits.get_address(),
       alice_permit_counter);
     await expect_to_fail(async () => {
@@ -209,12 +177,12 @@ describe('[FA2 fungible] Add permit', async () => {
     const packed_transfer_params = get_packed_transfer_params(tps)
 
     const permit_data = get_transfer_permit_data(
-      blake2b(packed_transfer_params),
+      packed_transfer_params,
       permits.get_address(),
       alice_permit_counter);
 
     const wrong_permit_data = get_transfer_permit_data(
-      blake2b(wrong_packed_transfer_params),
+      wrong_packed_transfer_params,
       permits.get_address(),
       alice_permit_counter);
 
@@ -230,7 +198,7 @@ describe('[FA2 fungible] Add permit', async () => {
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      blake2b(packed_transfer_params),
+      packed_transfer_params,
       permits.get_address(),
       alice_permit_counter);
 
@@ -245,7 +213,7 @@ describe('[FA2 fungible] Add permit', async () => {
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      blake2b(packed_transfer_params),
+      packed_transfer_params,
       permits.get_address(),
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
@@ -265,7 +233,7 @@ describe('[FA2 fungible] Add permit', async () => {
     assert(initial_permit?.equals(get_ref_user_permits(new Nat(1), packed_transfer_params, expiry, now)))
 
     const permit_data = get_transfer_permit_data(
-      blake2b(packed_transfer_params),
+      packed_transfer_params,
       permits.get_address(),
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
@@ -274,43 +242,6 @@ describe('[FA2 fungible] Add permit', async () => {
     }, pair_to_mich([string_to_mich("DUP_PERMIT"), blake2b(packed_transfer_params).to_mich()]))
   });
 
-  // it('Expired permit are removed when a new permit is added should succeed', async () => {
-  //   const new_expiry = new Nat(1);
-
-  //   let alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
-  //   const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
-  //   const packed_transfer_params = get_packed_transfer_params(tps)
-  //   const permit_data = get_transfer_permit_data(
-  //     packed_transfer_params,
-  //     permits.get_address(),
-  //     alice_permit_counter);
-  //   const sig = await alice.sign(permit_data)
-  //   await permits.permit(new Key(alice.pubk), sig, packed_transfer_params, { as: bob })
-
-  //   const added_permit = await permits.get_permits_value(alice.get_address())
-  //   assert(added_permit?.equals(get_ref_user_permits(new Nat(3), packed_transfer_params, expiry, now)))
-
-  //   await permits.set_expiry(Option.Some<Nat>(new_expiry), Option.Some<Bytes>(packed_transfer_params), { as: alice })
-
-  //   const res_permit = await permits.get_permits_value(alice.get_address())
-  //   assert(res_permit?.equals(get_ref_user_permits(new Nat(3), packed_transfer_params, new_expiry, now)))
-
-  //   const new_now = new Date(now.getTime() + 1100 * 1000)
-  //   set_mockup_now(new_now);
-
-  //   alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
-  //   const after_packed_transfer_params = get_packed_transfer_params(tps)
-  //   const after_permit_data = await get_transfer_permit_data(
-  //     packed_transfer_params,
-  //     permits.get_address(),
-  //     alice_permit_counter);
-  //   const sig_after = await alice.sign(after_permit_data)
-
-  //   await permits.permit(new Key(alice.pubk), sig_after, after_packed_transfer_params, { as: bob })
-
-  //   const after_second_permit_res = (await permits.get_permits_value(alice.get_address()))
-  //   assert(after_second_permit_res?.equals(get_ref_user_permits(new Nat(4), after_packed_transfer_params, expiry, new_now)))
-  // });
 });
 
 describe('[FA2 fungible] Transfers', async () => {
@@ -418,7 +349,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
       [new transfer_destination(user2.get_address(), token_id, amount)
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
-    const after_permit_data = await get_transfer_permit_data(
+    const after_permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
       counter);
@@ -447,7 +378,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
       [new transfer_destination(user1.get_address(), token_id, amount)
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
-    const permit_data = await get_transfer_permit_data(
+    const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
       counter);
@@ -481,7 +412,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
       [new transfer_destination(user1.get_address(), token_id, amount)
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
-    const after_permit_data = await get_transfer_permit_data(
+    const after_permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
       counter);
@@ -508,7 +439,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
       [new transfer_destination(user1.get_address(), token_id, amount)
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
-    const after_permit_data = await get_transfer_permit_data(
+    const after_permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
       counter);
@@ -537,7 +468,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     const tps = [new transfer_param(user1.get_address(),
       [new transfer_destination(user2.get_address(), token_id, amount)])
     ]
-    const packed_transfer_params = pack([tps[0].to_mich()], transfer_type);
+    const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
@@ -564,7 +495,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     const tps = [new transfer_param(user2.get_address(),
       [new transfer_destination(user1.get_address(), token_id, amount)
       ])]
-    const packed_transfer_params = pack([tps[0].to_mich()], transfer_type);
+    const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
@@ -582,7 +513,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     assert(balance_user2_after?.equals(new Nat(1)), "Invalid amount user2")
   });
 
-  it('Transfer one-step tokens gasless with from different signer should fail', async () => {
+  it('Transfer one-step tokens with from different signer should fail', async () => {
     // await fa2_fungible.mint(user4.get_address(), new Nat(1), { as: alice })
 
     const amount = new Nat(1);
@@ -622,7 +553,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
       [new transfer_destination(user1.get_address(), token_id, amount)
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
-    const after_permit_data = await get_transfer_permit_data(
+    const after_permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
       counter);
@@ -665,7 +596,7 @@ describe('[FA2 fungible] Consume permit', async () => {
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      blake2b(packed_transfer_params),
+      packed_transfer_params,
       permits.get_address(),
       counter);
     const sig = await user1.sign(permit_data)
@@ -697,7 +628,7 @@ describe('[FA2 fungible] Consume permit', async () => {
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      blake2b(packed_transfer_params),
+      packed_transfer_params,
       permits.get_address(),
       counter);
     const sig = await user2.sign(permit_data)
@@ -729,7 +660,7 @@ describe('[FA2 fungible] Consume permit', async () => {
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      blake2b(packed_transfer_params),
+      packed_transfer_params,
       permits.get_address(),
       counter);
     const sig = await user2.sign(permit_data)
@@ -769,7 +700,7 @@ describe('[FA2 fungible] Consume permit', async () => {
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
-      blake2b(packed_transfer_params),
+      packed_transfer_params,
       permits.get_address(),
       counter);
 
