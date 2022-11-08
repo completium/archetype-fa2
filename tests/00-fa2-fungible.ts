@@ -540,7 +540,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     }, fa2_fungible.errors.SIGNER_NOT_FROM);
   });
 
-  it('Transfer one-step should succed', async () => {
+  it('Transfer one-step without permit (None value) should succed', async () => {
     const amount = new Nat(1);
     const permit = await permits.get_permits_value(user2.get_address())
     const counter = permit?.counter
@@ -552,15 +552,15 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     const tps = [new transfer_param(user2.get_address(),
       [new transfer_destination(user1.get_address(), token_id, amount)
       ])]
-    const packed_transfer_params = get_packed_transfer_params(tps)
-    const after_permit_data = get_transfer_permit_data(
-      packed_transfer_params,
-      permits.get_address(),
-      counter);
-    const sig = await user2.sign(after_permit_data)
-    const lpermit = Option.Some<[Key, Signature]>([user2.get_public_key(), sig]);
+    // const packed_transfer_params = get_packed_transfer_params(tps)
+    // const after_permit_data = get_transfer_permit_data(
+    //   packed_transfer_params,
+    //   permits.get_address(),
+    //   counter);
+    // const sig = await user2.sign(after_permit_data)
+    // const lpermit = Option.Some<[Key, Signature]>([user2.get_public_key(), sig]);
 
-    await fa2_fungible.permit_transfer(tps, lpermit, { as: user3 })
+    await fa2_fungible.permit_transfer(tps, Option.None<[Key, Signature]>(), { as: user2 })
 
     const balance_user1_after = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_after = await fa2_fungible.get_ledger_value(user2.get_address())
