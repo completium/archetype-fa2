@@ -117,6 +117,7 @@ enum consumer_op =
 | remove<address>
 
 entry manage_consumer(op : consumer_op) {
+  no transfer
   called by owner
   effect {
     match op with
@@ -127,6 +128,7 @@ entry manage_consumer(op : consumer_op) {
 }
 
 entry set_expiry(iv : option<nat>, ip : option<bytes>) {
+  no transfer
   constant {
     caller_permit ?is permits[caller] otherwise (USER_PERMIT_NOT_FOUND, caller);
   }
@@ -159,6 +161,7 @@ entry set_default_expiry(v : nat) {
 }
 
 entry permit(signer : key, sig : signature, permit_key : bytes) {
+  no transfer
   constant {
     user          is key_to_address(signer);
     usr_permit    is permits[user] ?
@@ -191,6 +194,7 @@ entry permit(signer : key, sig : signature, permit_key : bytes) {
 }
 
 entry consume(user : address, permit_key: bytes, err: string) {
+  no transfer
   called by consumer
   constant {
    signer_expiry  is get_expiry(user, permit_key);
@@ -209,6 +213,7 @@ entry consume(user : address, permit_key: bytes, err: string) {
 }
 
 entry check(signer : key, sig : signature, data : bytes) {
+  no transfer
   called by consumer
   constant {
     user     is key_to_address(signer);
