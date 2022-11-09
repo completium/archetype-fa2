@@ -152,6 +152,27 @@ entry set_expiry(iv : option<nat>, ip : option<bytes>) {
   }
 }
 
+entry setExpiry(u : address, sec : nat, data : option<bytes>) {
+  no transfer
+  constant {
+    u_permit ?is permits[u] otherwise (USER_PERMIT_NOT_FOUND, u);
+  }
+  require {
+    r5: is_not_paused();
+    r6: u = caller otherwise "INVALID_CALLER";
+  }
+  effect {
+    match data with
+    | some(permit_key) -> begin
+        const up : user_permit ?=
+          u_permit.user_permits[permit_key] : (PERMIT_NOT_FOUND, (caller, permit_key));
+        permits[u].user_permits.update(permit_key, some({ up with expiry = some(sec) }))
+      end
+    | none -> permits.update(caller, { user_expiry = some(sec) })
+    end
+  }
+}
+
 entry set_default_expiry(v : nat) {
   called by owner
   require { r3: is_not_paused() }

@@ -121,6 +121,13 @@ const set_expiry_arg_to_mich = (iv: att.Option<att.Nat>, ip: att.Option<att.Byte
         ip.to_mich((x => { return x.to_mich(); }))
     ]);
 }
+const setExpiry_arg_to_mich = (u: att.Address, sec: att.Nat, data: att.Option<att.Bytes>): att.Micheline => {
+    return att.pair_to_mich([
+        u.to_mich(),
+        sec.to_mich(),
+        data.to_mich((x => { return x.to_mich(); }))
+    ]);
+}
 const set_default_expiry_arg_to_mich = (v: att.Nat): att.Micheline => {
     return v.to_mich();
 }
@@ -210,6 +217,12 @@ export class Permits {
         }
         throw new Error("Contract not initialised");
     }
+    async setExpiry(u: att.Address, sec: att.Nat, data: att.Option<att.Bytes>, params: Partial<ex.Parameters>): Promise<any> {
+        if (this.address != undefined) {
+            return await ex.call(this.address, "setExpiry", setExpiry_arg_to_mich(u, sec, data), params);
+        }
+        throw new Error("Contract not initialised");
+    }
     async set_default_expiry(v: att.Nat, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
             return await ex.call(this.address, "set_default_expiry", set_default_expiry_arg_to_mich(v), params);
@@ -273,6 +286,12 @@ export class Permits {
     async get_set_expiry_param(iv: att.Option<att.Nat>, ip: att.Option<att.Bytes>, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
             return await ex.get_call_param(this.address, "set_expiry", set_expiry_arg_to_mich(iv, ip), params);
+        }
+        throw new Error("Contract not initialised");
+    }
+    async get_setExpiry_param(u: att.Address, sec: att.Nat, data: att.Option<att.Bytes>, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+        if (this.address != undefined) {
+            return await ex.get_call_param(this.address, "setExpiry", setExpiry_arg_to_mich(u, sec, data), params);
         }
         throw new Error("Contract not initialised");
     }
@@ -398,11 +417,14 @@ export class Permits {
     }
     errors = {
         p10: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"p10\"")]),
+        NO_TRANSFER: att.string_to_mich("\"NO_TRANSFER\""),
         INVALID_CALLER: att.string_to_mich("\"INVALID_CALLER\""),
         p8: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"p8\"")]),
         p7: att.string_to_mich("\"MAX_PERMITS_REACHED\""),
         p4: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"p4\"")]),
         r3: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"r3\"")]),
+        r6: att.string_to_mich("\"INVALID_CALLER\""),
+        r5: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"r5\"")]),
         r2: att.string_to_mich("\"EXPIRY_TOO_BIG\""),
         r1: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"r1\"")]),
         md_r1: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"md_r1\"")]),

@@ -347,3 +347,35 @@ getter balance_of (requests : list<balance_of_request>) : list<balance_of_respon
 view get_royalties(tokenId : nat) : list<part> {
   return (royalties[tokenId] ? the.rvalue : make_list<part>([]))
 }
+
+/* TZIP-017 One-step  ------------------------------------------------------ */
+
+entry permit_transfer (txs : list<transfer_param>, permit : option<key * signature>) {
+  no transfer
+  require { fa2_r9 : is_not_paused() }
+  effect {
+    match permit with
+    | some(p) -> begin
+        const pk = p[0];
+        const sig = p[1];
+        const pkh_signer = key_to_address(pk);
+        do_require(check_owner(pkh_signer, txs), SIGNER_NOT_FROM);
+        transfer 0tz to permits
+            call check<key * signature * bytes>((pk, sig, blake2b(pack(txs))));
+        transfer 0tz to entry self.do_transfer(txs);
+    end
+    | none -> begin
+      if not check_operator(txs) then begin
+        match get_from(txs) with
+        | some(%from) ->
+          transfer 0tz to permits
+            call consume<address * bytes * string>((%from, blake2b(pack(txs)), FA2_NOT_OPERATOR))
+        | none -> ()
+        end
+      end;
+
+      transfer 0tz to entry self.do_transfer(txs);
+    end
+    end
+  }
+}

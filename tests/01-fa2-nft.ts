@@ -536,6 +536,168 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
   });
 });
 
+describe('[FA2 NFT] Transfers one-step ', async () => {
+  it('Transfer a token not owned should fail', async () => {
+    const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
+
+    const tps = [new transfer_param(alice.get_address(),
+      [new transfer_destination(bob.get_address(), token_id, amount)
+      ])]
+
+    const packed_transfer_params = get_packed_transfer_params(tps)
+
+    const permit_data = get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      alice_permit_counter);
+    const sig = await bob.sign(permit_data)
+
+    const not_owned_token = new Nat(777)
+    const another_tps = [new transfer_param(alice.get_address(),
+      [new transfer_destination(bob.get_address(), not_owned_token, amount)
+      ])]
+
+    const lpermit = Option.Some<[Key, Signature]>([bob.get_public_key(), sig]);
+
+    await expect_to_fail(async () => {
+      await fa2_nft.permit_transfer(another_tps, lpermit, { as: bob })
+    }, fa2_nft.errors.SIGNER_NOT_FROM)
+
+  });
+
+  it('Transfer a token from another user with wrong a permit should fail', async () => {
+    const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
+
+    const tps = [new transfer_param(alice.get_address(),
+      [new transfer_destination(bob.get_address(), token_id, amount)
+      ])]
+
+    const packed_transfer_params = get_packed_transfer_params(tps)
+
+    const permit_data = get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      alice_permit_counter);
+    const sig = await alice.sign(permit_data)
+
+    const not_owned_token = new Nat(1)
+    const another_tps = [
+      new transfer_param(alice.get_address(),
+        [new transfer_destination(bob.get_address(), not_owned_token, amount)]
+      )
+    ]
+
+    const another_packed = get_packed_transfer_params(another_tps)
+    const another_permit_data = get_transfer_permit_data(
+      another_packed,
+      permits.get_address(),
+      alice_permit_counter);
+    const lpermit = Option.Some<[Key, Signature]>([alice.get_public_key(), sig]);
+
+    await expect_to_fail(async () => {
+      await fa2_nft.permit_transfer(another_tps, lpermit, { as: alice })
+    }, get_missigned_error(another_permit_data))
+  });
+
+  it('Transfer more tokens than owned should fail', async () => {
+    const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
+
+    const tps = [new transfer_param(alice.get_address(),
+      [new transfer_destination(bob.get_address(), token_id, new Nat(777777))
+      ])]
+
+    const packed_transfer_params = get_packed_transfer_params(tps)
+
+    const permit_data = get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      alice_permit_counter);
+    const sig = await alice.sign(permit_data)
+    const lpermit = Option.Some<[Key, Signature]>([alice.get_public_key(), sig]);
+
+    await expect_to_fail(async () => {
+      await fa2_nft.permit_transfer(tps, lpermit, { as: alice })
+    }, fa2_nft.errors.FA2_INSUFFICIENT_BALANCE)
+  });
+
+  it('Transfer tokens with from different signer should fail', async () => {
+    const new_token = new Nat(11211)
+
+    await fa2_nft.mint(
+      carl.get_address(),       // owner
+      new_token,                // token id
+      [['', new Bytes('')]],    // metadata
+      [                         // royalties
+        new part(alice.get_address(), new Nat(1000)),
+        new part(bob.get_address(), new Nat(500))
+      ], {
+      as: alice,
+    }
+    );
+
+    const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
+
+    const tps = [new transfer_param(carl.get_address(),
+      [new transfer_destination(bob.get_address(), new_token, amount)]
+    )]
+
+    const packed_transfer_params = get_packed_transfer_params(tps)
+
+    const permit_data = get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      alice_permit_counter);
+    const sig = await alice.sign(permit_data)
+    const lpermit = Option.Some<[Key, Signature]>([alice.get_public_key(), sig]);
+
+    const token_owner = await fa2_nft.get_ledger_value(new_token)
+    assert(token_owner?.equals(carl.get_address()), "Invalid owner before")
+
+    await expect_to_fail(async () => {
+      await fa2_nft.permit_transfer(tps, lpermit, { as: alice })
+    }, fa2_nft.errors.SIGNER_NOT_FROM)
+  });
+
+  it('Transfer tokens with permit should succeed', async () => {
+    const new_token = new Nat(11212)
+
+    await fa2_nft.mint(
+      alice.get_address(),      // owner
+      new_token,                // token id
+      [['', new Bytes('')]],    // metadata
+      [                         // royalties
+        new part(alice.get_address(), new Nat(1000)),
+        new part(bob.get_address(), new Nat(500))
+      ], {
+      as: alice,
+    }
+    );
+
+    const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
+
+    const tps = [new transfer_param(alice.get_address(),
+      [new transfer_destination(bob.get_address(), new_token, amount)]
+    )]
+
+    const packed_transfer_params = get_packed_transfer_params(tps)
+
+    const permit_data = get_transfer_permit_data(
+      packed_transfer_params,
+      permits.get_address(),
+      alice_permit_counter);
+    const sig = await alice.sign(permit_data)
+    const lpermit = Option.Some<[Key, Signature]>([alice.get_public_key(), sig]);
+
+    const token_owner = await fa2_nft.get_ledger_value(new_token)
+    assert(token_owner?.equals(alice.get_address()), "Invalid owner before")
+
+    await fa2_nft.permit_transfer(tps, lpermit, { as: alice })
+
+    const token_owner_after = await fa2_nft.get_ledger_value(new_token)
+    assert(token_owner_after?.equals(bob.get_address()), "Invalid owner after")
+  });
+});
+
 describe('[FA2 NFT] Set metadata', async () => {
   it('Set metadata with empty content should succeed', async () => {
     const metadata_before = await fa2_nft.get_metadata_value("key")
