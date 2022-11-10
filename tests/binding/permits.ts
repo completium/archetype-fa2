@@ -423,7 +423,6 @@ export class Permits {
         p7: att.string_to_mich("\"MAX_PERMITS_REACHED\""),
         p4: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"p4\"")]),
         r3: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"r3\"")]),
-        r6: att.string_to_mich("\"INVALID_CALLER\""),
         r5: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"r5\"")]),
         r2: att.string_to_mich("\"EXPIRY_TOO_BIG\""),
         r1: att.pair_to_mich([att.string_to_mich("\"INVALID_CONDITION\""), att.string_to_mich("\"r1\"")]),

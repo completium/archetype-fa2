@@ -154,12 +154,12 @@ entry set_expiry(iv : option<nat>, ip : option<bytes>) {
 
 entry setExpiry(u : address, sec : nat, data : option<bytes>) {
   no transfer
+  called by u
   constant {
     u_permit ?is permits[u] otherwise (USER_PERMIT_NOT_FOUND, u);
   }
   require {
     r5: is_not_paused();
-    r6: u = caller otherwise "INVALID_CALLER";
   }
   effect {
     match data with
