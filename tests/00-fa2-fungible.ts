@@ -43,7 +43,7 @@ const expiry = new Nat(31556952)
 const get_ref_user_permits = (counter: Nat, data: Bytes, expiry: Nat, now: Date) => {
   return new permits_value(counter, Option.None<Nat>(), [[
     blake2b(data),
-    new user_permit(Option.Some<Nat>(expiry), new Date(now.getTime() - now.getMilliseconds() + (now.getMilliseconds() % 1000 == 0 ? 0 : 1000)))
+    new user_permit(Option.Some<Nat>(expiry), new Date(now.getTime() - now.getMilliseconds() + 1000))
   ]])
 }
 
