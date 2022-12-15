@@ -5,6 +5,10 @@ export enum consumer_op_types {
     remove = "remove"
 }
 export abstract class consumer_op extends att.Enum<consumer_op_types> {
+    abstract to_mich(): att.Micheline;
+    equals(v: consumer_op): boolean {
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
 }
 export class add extends consumer_op {
     constructor(private content: att.Address) {
@@ -20,14 +24,20 @@ export class remove extends consumer_op {
     constructor(private content: att.Address) {
         super(consumer_op_types.remove);
     }
-    to_mich() { return att.right_to_mich(att.left_to_mich(this.content.to_mich())); }
+    to_mich() { return att.right_to_mich(this.content.to_mich()); }
     toString(): string {
         return JSON.stringify(this, null, 2);
     }
     get() { return this.content; }
 }
-export const mich_to_consumer_op = (m: any): consumer_op => {
-    throw new Error("mich_toconsumer_op : complex enum not supported yet");
+export const mich_to_consumer_op = (m: att.Micheline): consumer_op => {
+    if ((m as att.Msingle).prim == "Left") {
+        return new add(att.mich_to_address((m as att.Msingle).args[0]));
+    }
+    if ((m as att.Msingle).prim == "Right") {
+        return new remove(att.mich_to_address((m as att.Msingle).args[0]));
+    }
+    throw new Error("mich_to_consumer_op : invalid micheline");
 };
 export class user_permit implements att.ArchetypeType {
     constructor(public expiry: att.Option<att.Nat>, public created_at: Date) { }
@@ -38,15 +48,16 @@ export class user_permit implements att.ArchetypeType {
         return att.pair_to_mich([this.expiry.to_mich((x => { return x.to_mich(); })), att.date_to_mich(this.created_at)]);
     }
     equals(v: user_permit): boolean {
-        return (this.expiry.equals(v.expiry) && this.expiry.equals(v.expiry) && (this.created_at.getTime() - this.created_at.getMilliseconds()) == (v.created_at.getTime() - v.created_at.getMilliseconds()));
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): user_permit {
+        return new user_permit(att.mich_to_option((input as att.Mpair).args[0], x => { return att.mich_to_nat(x); }), att.mich_to_date((input as att.Mpair).args[1]));
     }
 }
 export const user_permit_mich_type: att.MichelineType = att.pair_array_to_mich_type([
     att.option_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%expiry"]),
     att.prim_annot_to_mich_type("timestamp", ["%created_at"])
 ], []);
-export type consumer_key = att.Address;
-export type permits_key = att.Address;
 export const consumer_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("address", []);
 export const permits_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("address", []);
 export class permits_value implements att.ArchetypeType {
@@ -58,41 +69,40 @@ export class permits_value implements att.ArchetypeType {
         return JSON.stringify(this, null, 2);
     }
     to_mich(): att.Micheline {
-        return att.pair_to_mich([this.counter.to_mich(), att.pair_to_mich([this.user_expiry.to_mich((x => { return x.to_mich(); })), att.list_to_mich(this.user_permits, x => {
-                    const x_key = x[0];
-                    const x_value = x[1];
-                    return att.elt_to_mich(x_key.to_mich(), x_value.to_mich());
-                })])]);
+        return att.pair_to_mich([this.counter.to_mich(), this.user_expiry.to_mich((x => { return x.to_mich(); })), att.list_to_mich(this.user_permits, x => {
+                const x_key = x[0];
+                const x_value = x[1];
+                return att.elt_to_mich(x_key.to_mich(), x_value.to_mich());
+            })]);
     }
     equals(v: permits_value): boolean {
-        return (this.counter.equals(v.counter) && this.counter.equals(v.counter) && this.user_expiry.equals(v.user_expiry) && JSON.stringify(this.user_permits) == JSON.stringify(v.user_permits));
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): permits_value {
+        return new permits_value(att.mich_to_nat((input as att.Mpair).args[0]), att.mich_to_option((input as att.Mpair).args[1], x => { return att.mich_to_nat(x); }), att.mich_to_map((input as att.Mpair).args[2], (x, y) => [att.mich_to_bytes(x), user_permit.from_mich(y)]));
     }
 }
 export const permits_value_mich_type: att.MichelineType = att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("nat", ["%counter"]),
-    att.pair_array_to_mich_type([
-        att.option_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%user_expiry"]),
-        att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("bytes", []), att.pair_array_to_mich_type([
-            att.option_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%expiry"]),
-            att.prim_annot_to_mich_type("timestamp", ["%created_at"])
-        ], []), ["%user_permits"])
-    ], [])
+    att.option_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%user_expiry"]),
+    att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("bytes", []), att.pair_array_to_mich_type([
+        att.option_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%expiry"]),
+        att.prim_annot_to_mich_type("timestamp", ["%created_at"])
+    ], []), ["%user_permits"])
 ], []);
-export type consumer_container = Array<consumer_key>;
+export type consumer_container = Array<att.Address>;
 export type permits_container = Array<[
-    permits_key,
+    att.Address,
     permits_value
 ]>;
-export const consumer_container_mich_type: att.MichelineType = att.list_annot_to_mich_type(att.prim_annot_to_mich_type("address", []), []);
+export const consumer_container_mich_type: att.MichelineType = att.set_annot_to_mich_type(att.prim_annot_to_mich_type("address", []), []);
 export const permits_container_mich_type: att.MichelineType = att.pair_annot_to_mich_type("big_map", att.prim_annot_to_mich_type("address", []), att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("nat", ["%counter"]),
-    att.pair_array_to_mich_type([
-        att.option_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%user_expiry"]),
-        att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("bytes", []), att.pair_array_to_mich_type([
-            att.option_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%expiry"]),
-            att.prim_annot_to_mich_type("timestamp", ["%created_at"])
-        ], []), ["%user_permits"])
-    ], [])
+    att.option_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%user_expiry"]),
+    att.pair_annot_to_mich_type("map", att.prim_annot_to_mich_type("bytes", []), att.pair_array_to_mich_type([
+        att.option_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%expiry"]),
+        att.prim_annot_to_mich_type("timestamp", ["%created_at"])
+    ], []), ["%user_permits"])
 ], []), []);
 const declare_ownership_arg_to_mich = (candidate: att.Address): att.Micheline => {
     return candidate.to_mich();
@@ -321,47 +331,38 @@ export class Permits {
     }
     async get_owner(): Promise<att.Address> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            return new att.Address(storage.owner);
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_address((storage as att.Mpair).args[0]);
         }
         throw new Error("Contract not initialised");
     }
     async get_owner_candidate(): Promise<att.Option<att.Address>> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            return new att.Option<att.Address>(storage.owner_candidate == null ? null : (x => { return new att.Address(x); })(storage.owner_candidate));
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_option((storage as att.Mpair).args[1], x => { return att.mich_to_address(x); });
         }
         throw new Error("Contract not initialised");
     }
     async get_paused(): Promise<boolean> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            return storage.paused.prim ? (storage.paused.prim == "True" ? true : false) : storage.paused;
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_bool((storage as att.Mpair).args[2]);
         }
         throw new Error("Contract not initialised");
     }
     async get_consumer(): Promise<consumer_container> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const res: Array<att.Address> = [];
-            for (let i = 0; i < storage.consumer.length; i++) {
-                res.push((x => { return new att.Address(x); })(storage.consumer[i]));
-            }
-            return res;
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_list((storage as att.Mpair).args[3], x => { return att.mich_to_address(x); });
         }
         throw new Error("Contract not initialised");
     }
-    async get_permits_value(key: permits_key): Promise<permits_value | undefined> {
+    async get_permits_value(key: att.Address): Promise<permits_value | undefined> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.permits), key.to_mich(), permits_key_mich_type, permits_value_mich_type), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[4]).toString()), key.to_mich(), permits_key_mich_type);
             if (data != undefined) {
-                return new permits_value((x => { return new att.Nat(x); })(data.counter), (x => { return new att.Option<att.Nat>(x == null ? null : (x => { return new att.Nat(x); })(x)); })(data.user_expiry), (x => { let res: Array<[
-                    att.Bytes,
-                    user_permit
-                ]> = []; for (let e of x.entries()) {
-                    res.push([(x => { return new att.Bytes(x); })(e[0]), (x => { return new user_permit((x => { return new att.Option<att.Nat>(x == null ? null : (x => { return new att.Nat(x); })(x)); })(x.expiry), (x => { return new Date(x); })(x.created_at)); })(e[1])]);
-                } return res; })(data.user_permits));
+                return permits_value.from_mich(data);
             }
             else {
                 return undefined;
@@ -369,10 +370,10 @@ export class Permits {
         }
         throw new Error("Contract not initialised");
     }
-    async has_permits_value(key: permits_key): Promise<boolean> {
+    async has_permits_value(key: att.Address): Promise<boolean> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.permits), key.to_mich(), permits_key_mich_type, permits_value_mich_type), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[4]).toString()), key.to_mich(), permits_key_mich_type);
             if (data != undefined) {
                 return true;
             }
@@ -384,17 +385,17 @@ export class Permits {
     }
     async get_default_expiry(): Promise<att.Nat> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            return new att.Nat(storage.default_expiry);
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_nat((storage as att.Mpair).args[5]);
         }
         throw new Error("Contract not initialised");
     }
     async get_metadata_value(key: string): Promise<att.Bytes | undefined> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.metadata), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", [])), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[6]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
             if (data != undefined) {
-                return new att.Bytes(data);
+                return att.mich_to_bytes(data);
             }
             else {
                 return undefined;
@@ -404,8 +405,8 @@ export class Permits {
     }
     async has_metadata_value(key: string): Promise<boolean> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.metadata), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", [])), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[6]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
             if (data != undefined) {
                 return true;
             }

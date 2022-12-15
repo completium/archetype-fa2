@@ -7,7 +7,7 @@ const assert = require('assert');
 
 /* Contracts */
 
-import { balance_of_request, fa2_fungible, gasless_param, operator_key, operator_param, transfer_destination, transfer_param } from './binding/fa2_fungible';
+import { add_operator, balance_of_request, fa2_fungible, gasless_param, operator_key, operator_param, remove_operator, transfer_destination, transfer_param } from './binding/fa2_fungible';
 import { add, permits, permits_value, user_permit } from './binding/permits';
 
 /* Accounts ----------------------------------------------------------------- */
@@ -43,7 +43,7 @@ const expiry = new Nat(31556952)
 const get_ref_user_permits = (counter: Nat, data: Bytes, expiry: Nat, now: Date) => {
   return new permits_value(counter, Option.None<Nat>(), [[
     blake2b(data),
-    new user_permit(Option.Some<Nat>(expiry), new Date(now.getTime() - now.getMilliseconds() + 1000))
+    new user_permit(Option.Some<Nat>(expiry), new Date(now.getTime() - now.getMilliseconds()))
   ]])
 }
 
@@ -114,7 +114,7 @@ describe('[FA2 fungible] Update operators', async () => {
     const has_operator_before = await fa2_fungible.has_operator_value(op_key)
     assert(has_operator_before == false)
     await fa2_fungible.update_operators([
-      Or.Left(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
+      new add_operator(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
     ], { as: alice })
     const has_operator_after = await fa2_fungible.has_operator_value(op_key)
     assert(has_operator_after == true)
@@ -122,14 +122,14 @@ describe('[FA2 fungible] Update operators', async () => {
 
   it('Remove a non existing operator should succeed', async () => {
     await fa2_fungible.update_operators([
-      Or.Right(new operator_param(alice.get_address(), bob.get_address(), token_id))
+      new remove_operator(new operator_param(alice.get_address(), bob.get_address(), token_id))
     ], { as: alice })
   });
 
   it('Remove an existing operator for another user should fail', async () => {
     await expect_to_fail(async () => {
       await fa2_fungible.update_operators([
-        Or.Right(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
+        new remove_operator(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
       ], { as: bob })
     }, fa2_fungible.errors.FA2_NOT_OWNER);
   });
@@ -137,7 +137,7 @@ describe('[FA2 fungible] Update operators', async () => {
   it('Add operator for another user should fail', async () => {
     await expect_to_fail(async () => {
       await fa2_fungible.update_operators([
-        Or.Left(new operator_param(bob.get_address(), fa2_fungible.get_address(), token_id))
+        new add_operator(new operator_param(bob.get_address(), fa2_fungible.get_address(), token_id))
       ], { as: alice });
     }, fa2_fungible.errors.FA2_NOT_OWNER);
   });
@@ -147,7 +147,7 @@ describe('[FA2 fungible] Update operators', async () => {
     const has_operator_before = await fa2_fungible.has_operator_value(op_key)
     assert(has_operator_before == true)
     await fa2_fungible.update_operators([
-      Or.Right(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
+      new remove_operator(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
     ], { as: alice })
     const has_operator_after = await fa2_fungible.has_operator_value(op_key)
     assert(has_operator_after == false)
@@ -310,7 +310,7 @@ describe('[FA2 fungible] Transfers', async () => {
     assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
     await fa2_fungible.update_operators([
-      Or.Left<operator_param, operator_param>(new operator_param(user2.get_address(), user3.get_address(), token_id))
+      new add_operator(new operator_param(user2.get_address(), user3.get_address(), token_id))
     ],
       { as: user2 }
     );
@@ -322,7 +322,7 @@ describe('[FA2 fungible] Transfers', async () => {
     );
 
     await fa2_fungible.update_operators([
-      Or.Right<operator_param, operator_param>(new operator_param(user2.get_address(), user3.get_address(), token_id))
+      new remove_operator(new operator_param(user2.get_address(), user3.get_address(), token_id))
     ],
       { as: user2 }
     );
@@ -810,7 +810,7 @@ describe('[FA2 fungible] Pause', async () => {
   it('Update operators is not possible when contract is paused should fail', async () => {
     await expect_to_fail(async () => {
       await fa2_fungible.update_operators([
-        Or.Left(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
+        new add_operator(new operator_param(alice.get_address(), fa2_fungible.get_address(), token_id))
       ], { as: alice })
     }, fa2_fungible.errors.CONTRACT_PAUSED);
   });

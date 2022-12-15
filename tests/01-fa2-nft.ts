@@ -7,7 +7,7 @@ const assert = require('assert');
 
 /* Contracts */
 
-import { balance_of_request, fa2_nft, gasless_param, operator_key, operator_param, part, transfer_destination, transfer_param } from './binding/fa2_nft';
+import { add_operator, balance_of_request, fa2_nft, gasless_param, operator_key, operator_param, part, transfer_destination, transfer_param } from './binding/fa2_nft';
 import { add, permits, permits_value, user_permit } from './binding/permits';
 
 /* Accounts ----------------------------------------------------------------- */
@@ -43,7 +43,7 @@ const error_permit_expired = (v: number) => pair_to_mich([string_to_mich("\"PERM
 const get_ref_user_permits = (counter: Nat, data: Bytes, expiry: Nat, now: Date) => {
   return new permits_value(counter, Option.None<Nat>(), [[
     blake2b(data),
-    new user_permit(Option.Some<Nat>(expiry), new Date(now.getTime() - now.getMilliseconds() + 1000))
+    new user_permit(Option.Some<Nat>(expiry), new Date(now.getTime() - now.getMilliseconds()))
   ]])
 }
 
@@ -298,7 +298,7 @@ describe('[FA2 NFT] Transfers', async () => {
     const permits_count = added_permits?.user_permits.length
 
     await fa2_nft.update_operators([
-      Or.Left(new operator_param(alice.get_address(), carl.get_address(), token_id))
+      new add_operator(new operator_param(alice.get_address(), carl.get_address(), token_id))
     ], { as: alice })
 
     const token_owner = await fa2_nft.get_ledger_value(token_id)
@@ -905,7 +905,7 @@ describe('[FA2 NFT] Pause', async () => {
   it('Update operators is not possible when contract is paused should fail', async () => {
     await expect_to_fail(async () => {
       await fa2_nft.update_operators([
-        Or.Left(new operator_param(alice.get_address(), fa2_nft.get_address(), token_id))
+        new add_operator(new operator_param(alice.get_address(), fa2_nft.get_address(), token_id))
       ], { as: alice })
     }, fa2_nft.errors.CONTRACT_PAUSED);
   });

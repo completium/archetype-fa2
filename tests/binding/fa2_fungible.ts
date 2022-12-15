@@ -1,5 +1,44 @@
 import * as ex from "@completium/experiment-ts";
 import * as att from "@completium/archetype-ts-types";
+export enum update_op_types {
+    add_operator = "add_operator",
+    remove_operator = "remove_operator"
+}
+export abstract class update_op extends att.Enum<update_op_types> {
+    abstract to_mich(): att.Micheline;
+    equals(v: update_op): boolean {
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+}
+export class add_operator extends update_op {
+    constructor(private content: operator_param) {
+        super(update_op_types.add_operator);
+    }
+    to_mich() { return att.left_to_mich(this.content.to_mich()); }
+    toString(): string {
+        return JSON.stringify(this, null, 2);
+    }
+    get() { return this.content; }
+}
+export class remove_operator extends update_op {
+    constructor(private content: operator_param) {
+        super(update_op_types.remove_operator);
+    }
+    to_mich() { return att.right_to_mich(this.content.to_mich()); }
+    toString(): string {
+        return JSON.stringify(this, null, 2);
+    }
+    get() { return this.content; }
+}
+export const mich_to_update_op = (m: att.Micheline): update_op => {
+    if ((m as att.Msingle).prim == "Left") {
+        return new add_operator(operator_param.from_mich((m as att.Msingle).args[0]));
+    }
+    if ((m as att.Msingle).prim == "Right") {
+        return new remove_operator(operator_param.from_mich((m as att.Msingle).args[0]));
+    }
+    throw new Error("mich_to_update_op : invalid micheline");
+};
 export class transfer_destination implements att.ArchetypeType {
     constructor(public to_dest: att.Address, public token_id_dest: att.Nat, public token_amount_dest: att.Nat) { }
     toString(): string {
@@ -9,7 +48,10 @@ export class transfer_destination implements att.ArchetypeType {
         return att.pair_to_mich([this.to_dest.to_mich(), att.pair_to_mich([this.token_id_dest.to_mich(), this.token_amount_dest.to_mich()])]);
     }
     equals(v: transfer_destination): boolean {
-        return (this.to_dest.equals(v.to_dest) && this.to_dest.equals(v.to_dest) && this.token_id_dest.equals(v.token_id_dest) && this.token_amount_dest.equals(v.token_amount_dest));
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): transfer_destination {
+        return new transfer_destination(att.mich_to_address((input as att.Mpair).args[0]), att.mich_to_nat((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[0]), att.mich_to_nat((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[1]));
     }
 }
 export class transfer_param implements att.ArchetypeType {
@@ -23,7 +65,10 @@ export class transfer_param implements att.ArchetypeType {
             })]);
     }
     equals(v: transfer_param): boolean {
-        return (this.tp_from.equals(v.tp_from) && this.tp_from.equals(v.tp_from) && JSON.stringify(this.tp_txs) == JSON.stringify(v.tp_txs));
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): transfer_param {
+        return new transfer_param(att.mich_to_address((input as att.Mpair).args[0]), att.mich_to_list((input as att.Mpair).args[1], x => { return transfer_destination.from_mich(x); }));
     }
 }
 export class operator_param implements att.ArchetypeType {
@@ -35,7 +80,10 @@ export class operator_param implements att.ArchetypeType {
         return att.pair_to_mich([this.opp_owner.to_mich(), att.pair_to_mich([this.opp_operator.to_mich(), this.opp_token_id.to_mich()])]);
     }
     equals(v: operator_param): boolean {
-        return (this.opp_owner.equals(v.opp_owner) && this.opp_owner.equals(v.opp_owner) && this.opp_operator.equals(v.opp_operator) && this.opp_token_id.equals(v.opp_token_id));
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): operator_param {
+        return new operator_param(att.mich_to_address((input as att.Mpair).args[0]), att.mich_to_address((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[0]), att.mich_to_nat((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[1]));
     }
 }
 export class gasless_param implements att.ArchetypeType {
@@ -46,10 +94,13 @@ export class gasless_param implements att.ArchetypeType {
     to_mich(): att.Micheline {
         return att.pair_to_mich([att.list_to_mich(this.transfer_params, x => {
                 return x.to_mich();
-            }), att.pair_to_mich([this.user_pk.to_mich(), this.user_sig.to_mich()])]);
+            }), this.user_pk.to_mich(), this.user_sig.to_mich()]);
     }
     equals(v: gasless_param): boolean {
-        return (JSON.stringify(this.transfer_params) == JSON.stringify(v.transfer_params) && JSON.stringify(this.transfer_params) == JSON.stringify(v.transfer_params) && this.user_pk.equals(v.user_pk) && this.user_sig.equals(v.user_sig));
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): gasless_param {
+        return new gasless_param(att.mich_to_list((input as att.Mpair).args[0], x => { return transfer_param.from_mich(x); }), att.mich_to_key((input as att.Mpair).args[1]), att.mich_to_signature((input as att.Mpair).args[2]));
     }
 }
 export class balance_of_request implements att.ArchetypeType {
@@ -61,7 +112,10 @@ export class balance_of_request implements att.ArchetypeType {
         return att.pair_to_mich([this.bo_owner.to_mich(), this.btoken_id.to_mich()]);
     }
     equals(v: balance_of_request): boolean {
-        return (this.bo_owner.equals(v.bo_owner) && this.bo_owner.equals(v.bo_owner) && this.btoken_id.equals(v.btoken_id));
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): balance_of_request {
+        return new balance_of_request(att.mich_to_address((input as att.Mpair).args[0]), att.mich_to_nat((input as att.Mpair).args[1]));
     }
 }
 export class balance_of_response implements att.ArchetypeType {
@@ -73,7 +127,10 @@ export class balance_of_response implements att.ArchetypeType {
         return att.pair_to_mich([this.request.to_mich(), this.balance_.to_mich()]);
     }
     equals(v: balance_of_response): boolean {
-        return (this.request == v.request && this.request == v.request && this.balance_.equals(v.balance_));
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): balance_of_response {
+        return new balance_of_response(balance_of_request.from_mich((input as att.Mpair).args[0]), att.mich_to_nat((input as att.Mpair).args[1]));
     }
 }
 export const transfer_destination_mich_type: att.MichelineType = att.pair_array_to_mich_type([
@@ -111,10 +168,8 @@ export const gasless_param_mich_type: att.MichelineType = att.pair_array_to_mich
             ], [])
         ], []), ["%txs"])
     ], []), ["%transfer_params"]),
-    att.pair_array_to_mich_type([
-        att.prim_annot_to_mich_type("key", ["%user_pk"]),
-        att.prim_annot_to_mich_type("signature", ["%user_sig"])
-    ], [])
+    att.prim_annot_to_mich_type("key", ["%user_pk"]),
+    att.prim_annot_to_mich_type("signature", ["%user_sig"])
 ], []);
 export const balance_of_request_mich_type: att.MichelineType = att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("address", ["%owner"]),
@@ -127,8 +182,6 @@ export const balance_of_response_mich_type: att.MichelineType = att.pair_array_t
     ], ["%request"]),
     att.prim_annot_to_mich_type("nat", ["%balance"])
 ], []);
-export type token_metadata_key = att.Nat;
-export type ledger_key = att.Address;
 export class operator_key implements att.ArchetypeType {
     constructor(public oaddr: att.Address, public otoken: att.Nat, public oowner: att.Address) { }
     toString(): string {
@@ -138,7 +191,10 @@ export class operator_key implements att.ArchetypeType {
         return att.pair_to_mich([this.oaddr.to_mich(), att.pair_to_mich([this.otoken.to_mich(), this.oowner.to_mich()])]);
     }
     equals(v: operator_key): boolean {
-        return (this.oaddr.equals(v.oaddr) && this.oaddr.equals(v.oaddr) && this.otoken.equals(v.otoken) && this.oowner.equals(v.oowner));
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): operator_key {
+        return new operator_key(att.mich_to_address((input as att.Mpair).args[0]), att.mich_to_nat((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[0]), att.mich_to_address((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[1]));
     }
 }
 export const token_metadata_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
@@ -166,10 +222,12 @@ export class token_metadata_value implements att.ArchetypeType {
             })]);
     }
     equals(v: token_metadata_value): boolean {
-        return (this.token_id.equals(v.token_id) && this.token_id.equals(v.token_id) && JSON.stringify(this.token_info) == JSON.stringify(v.token_info));
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): token_metadata_value {
+        return new token_metadata_value(att.mich_to_nat((input as att.Mpair).args[0]), att.mich_to_map((input as att.Mpair).args[1], (x, y) => [att.mich_to_string(x), att.mich_to_bytes(y)]));
     }
 }
-export type ledger_value = att.Nat;
 export class operator_value implements att.ArchetypeType {
     constructor() { }
     toString(): string {
@@ -181,6 +239,9 @@ export class operator_value implements att.ArchetypeType {
     equals(v: operator_value): boolean {
         return true;
     }
+    static from_mich(input: att.Micheline): operator_value {
+        return new operator_value();
+    }
 }
 export const token_metadata_value_mich_type: att.MichelineType = att.pair_array_to_mich_type([
     att.prim_annot_to_mich_type("nat", ["%token_id"]),
@@ -189,12 +250,12 @@ export const token_metadata_value_mich_type: att.MichelineType = att.pair_array_
 export const ledger_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("nat", []);
 export const operator_value_mich_type: att.MichelineType = att.prim_annot_to_mich_type("unit", []);
 export type token_metadata_container = Array<[
-    token_metadata_key,
+    att.Nat,
     token_metadata_value
 ]>;
 export type ledger_container = Array<[
-    ledger_key,
-    ledger_value
+    att.Address,
+    att.Nat
 ]>;
 export type operator_container = Array<[
     operator_key,
@@ -243,9 +304,9 @@ const set_token_metadata_arg_to_mich = (tdata: Array<[
 const set_permits_arg_to_mich = (p: att.Address): att.Micheline => {
     return p.to_mich();
 }
-const update_operators_arg_to_mich = (upl: Array<att.Or<operator_param, operator_param>>): att.Micheline => {
+const update_operators_arg_to_mich = (upl: Array<update_op>): att.Micheline => {
     return att.list_to_mich(upl, x => {
-        return x.to_mich((x => { return x.to_mich(); }), (x => { return x.to_mich(); }));
+        return x.to_mich();
     });
 }
 const do_transfer_arg_to_mich = (txs: Array<transfer_param>): att.Micheline => {
@@ -368,7 +429,7 @@ export class Fa2_fungible {
         }
         throw new Error("Contract not initialised");
     }
-    async update_operators(upl: Array<att.Or<operator_param, operator_param>>, params: Partial<ex.Parameters>): Promise<any> {
+    async update_operators(upl: Array<update_op>, params: Partial<ex.Parameters>): Promise<any> {
         if (this.address != undefined) {
             return await ex.call(this.address, "update_operators", update_operators_arg_to_mich(upl), params);
         }
@@ -458,7 +519,7 @@ export class Fa2_fungible {
         }
         throw new Error("Contract not initialised");
     }
-    async get_update_operators_param(upl: Array<att.Or<operator_param, operator_param>>, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
+    async get_update_operators_param(upl: Array<update_op>, params: Partial<ex.Parameters>): Promise<att.CallParameter> {
         if (this.address != undefined) {
             return await ex.get_call_param(this.address, "update_operators", update_operators_arg_to_mich(upl), params);
         }
@@ -508,52 +569,45 @@ export class Fa2_fungible {
             if (this.balance_of_callback_address != undefined) {
                 const entrypoint = new att.Entrypoint(new att.Address(this.balance_of_callback_address), "callback");
                 await ex.call(this.address, "balance_of", att.getter_args_to_mich(balance_of_arg_to_mich(requests), entrypoint), params);
-                return await ex.get_callback_value<Array<balance_of_response>>(this.balance_of_callback_address, x => { const res: Array<balance_of_response> = []; for (let i = 0; i < x.length; i++) {
-                    res.push((x => { return new balance_of_response((x => { return new balance_of_request((x => { return new att.Address(x); })(x.owner), (x => { return new att.Nat(x); })(x.token_id)); })(x.request), (x => { return new att.Nat(x); })(x.balance)); })(x[i]));
-                } return res; });
+                return await ex.get_callback_value<Array<balance_of_response>>(this.balance_of_callback_address, x => { return att.mich_to_list(x, x => { return balance_of_response.from_mich(x); }); });
             }
         }
         throw new Error("Contract not initialised");
     }
     async get_owner(): Promise<att.Address> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            return new att.Address(storage.owner);
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_address((storage as att.Mpair).args[0]);
         }
         throw new Error("Contract not initialised");
     }
     async get_permits(): Promise<att.Address> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            return new att.Address(storage.permits);
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_address((storage as att.Mpair).args[1]);
         }
         throw new Error("Contract not initialised");
     }
     async get_owner_candidate(): Promise<att.Option<att.Address>> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            return new att.Option<att.Address>(storage.owner_candidate == null ? null : (x => { return new att.Address(x); })(storage.owner_candidate));
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_option((storage as att.Mpair).args[2], x => { return att.mich_to_address(x); });
         }
         throw new Error("Contract not initialised");
     }
     async get_paused(): Promise<boolean> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            return storage.paused.prim ? (storage.paused.prim == "True" ? true : false) : storage.paused;
+            const storage = await ex.get_raw_storage(this.address);
+            return att.mich_to_bool((storage as att.Mpair).args[3]);
         }
         throw new Error("Contract not initialised");
     }
-    async get_token_metadata_value(key: token_metadata_key): Promise<token_metadata_value | undefined> {
+    async get_token_metadata_value(key: att.Nat): Promise<token_metadata_value | undefined> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.token_metadata), key.to_mich(), token_metadata_key_mich_type, token_metadata_value_mich_type), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[4]).toString()), key.to_mich(), token_metadata_key_mich_type);
             if (data != undefined) {
-                return new token_metadata_value((x => { return new att.Nat(x); })(data.token_id), (x => { let res: Array<[
-                    string,
-                    att.Bytes
-                ]> = []; for (let e of x.entries()) {
-                    res.push([(x => { return x; })(e[0]), (x => { return new att.Bytes(x); })(e[1])]);
-                } return res; })(data.token_info));
+                return token_metadata_value.from_mich(data);
             }
             else {
                 return undefined;
@@ -561,10 +615,10 @@ export class Fa2_fungible {
         }
         throw new Error("Contract not initialised");
     }
-    async has_token_metadata_value(key: token_metadata_key): Promise<boolean> {
+    async has_token_metadata_value(key: att.Nat): Promise<boolean> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.token_metadata), key.to_mich(), token_metadata_key_mich_type, token_metadata_value_mich_type), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[4]).toString()), key.to_mich(), token_metadata_key_mich_type);
             if (data != undefined) {
                 return true;
             }
@@ -574,12 +628,12 @@ export class Fa2_fungible {
         }
         throw new Error("Contract not initialised");
     }
-    async get_ledger_value(key: ledger_key): Promise<ledger_value | undefined> {
+    async get_ledger_value(key: att.Address): Promise<att.Nat | undefined> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.ledger), key.to_mich(), ledger_key_mich_type, ledger_value_mich_type), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[5]).toString()), key.to_mich(), ledger_key_mich_type);
             if (data != undefined) {
-                return new att.Nat(data);
+                return att.mich_to_nat(data);
             }
             else {
                 return undefined;
@@ -587,10 +641,10 @@ export class Fa2_fungible {
         }
         throw new Error("Contract not initialised");
     }
-    async has_ledger_value(key: ledger_key): Promise<boolean> {
+    async has_ledger_value(key: att.Address): Promise<boolean> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.ledger), key.to_mich(), ledger_key_mich_type, ledger_value_mich_type), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[5]).toString()), key.to_mich(), ledger_key_mich_type);
             if (data != undefined) {
                 return true;
             }
@@ -602,10 +656,10 @@ export class Fa2_fungible {
     }
     async get_operator_value(key: operator_key): Promise<operator_value | undefined> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.operator), key.to_mich(), operator_key_mich_type, operator_value_mich_type), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[6]).toString()), key.to_mich(), operator_key_mich_type);
             if (data != undefined) {
-                return new operator_value();
+                return operator_value.from_mich(data);
             }
             else {
                 return undefined;
@@ -615,8 +669,8 @@ export class Fa2_fungible {
     }
     async has_operator_value(key: operator_key): Promise<boolean> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.operator), key.to_mich(), operator_key_mich_type, operator_value_mich_type), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[6]).toString()), key.to_mich(), operator_key_mich_type);
             if (data != undefined) {
                 return true;
             }
@@ -628,10 +682,10 @@ export class Fa2_fungible {
     }
     async get_metadata_value(key: string): Promise<att.Bytes | undefined> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.metadata), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", [])), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[7]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
             if (data != undefined) {
-                return new att.Bytes(data);
+                return att.mich_to_bytes(data);
             }
             else {
                 return undefined;
@@ -641,8 +695,8 @@ export class Fa2_fungible {
     }
     async has_metadata_value(key: string): Promise<boolean> {
         if (this.address != undefined) {
-            const storage = await ex.get_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(storage.metadata), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []), att.prim_annot_to_mich_type("bytes", [])), collapsed = true;
+            const storage = await ex.get_raw_storage(this.address);
+            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[7]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
             if (data != undefined) {
                 return true;
             }
