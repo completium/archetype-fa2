@@ -54,9 +54,34 @@ export class user_permit implements att.ArchetypeType {
         return new user_permit(att.mich_to_option((input as att.Mpair).args[0], x => { return att.mich_to_nat(x); }), att.mich_to_date((input as att.Mpair).args[1]));
     }
 }
+export class rec_to_sign_permit_data implements att.ArchetypeType {
+    constructor(public s_addr_contract: att.Address, public s_chainid: att.Chain_id, public s_counter: att.Nat, public s_data: att.Bytes) { }
+    toString(): string {
+        return JSON.stringify(this, null, 2);
+    }
+    to_mich(): att.Micheline {
+        return att.pair_to_mich([att.pair_to_mich([this.s_addr_contract.to_mich(), this.s_chainid.to_mich()]), att.pair_to_mich([this.s_counter.to_mich(), this.s_data.to_mich()])]);
+    }
+    equals(v: rec_to_sign_permit_data): boolean {
+        return att.micheline_equals(this.to_mich(), v.to_mich());
+    }
+    static from_mich(input: att.Micheline): rec_to_sign_permit_data {
+        return new rec_to_sign_permit_data(att.mich_to_address(((input as att.Mpair).args[0] as att.Mpair).args[0]), att.mich_to_chain_id(((input as att.Mpair).args[0] as att.Mpair).args[1]), att.mich_to_nat((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[0]), att.mich_to_bytes((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[1]));
+    }
+}
 export const user_permit_mich_type: att.MichelineType = att.pair_array_to_mich_type([
     att.option_annot_to_mich_type(att.prim_annot_to_mich_type("nat", []), ["%expiry"]),
     att.prim_annot_to_mich_type("timestamp", ["%created_at"])
+], []);
+export const rec_to_sign_permit_data_mich_type: att.MichelineType = att.pair_array_to_mich_type([
+    att.pair_array_to_mich_type([
+        att.prim_annot_to_mich_type("address", ["%addr"]),
+        att.prim_annot_to_mich_type("chain_id", ["%chain_id"])
+    ], []),
+    att.pair_array_to_mich_type([
+        att.prim_annot_to_mich_type("nat", ["%counter"]),
+        att.prim_annot_to_mich_type("bytes", ["%data"])
+    ], [])
 ], []);
 export const consumer_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("address", []);
 export const permits_key_mich_type: att.MichelineType = att.prim_annot_to_mich_type("address", []);

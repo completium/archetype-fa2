@@ -1,5 +1,5 @@
 import { Bytes, Key, MichelineType, Nat, Option, Or, pair_to_mich, Signature, string_to_mich } from '@completium/archetype-ts-types'
-import { blake2b, expect_to_fail, get_account, pack, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
+import { blake2b, expect_to_fail, get_account, get_chain_id, pack, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
 
 import { get_packed_transfer_params, get_transfer_permit_data, get_missigned_error, wrong_packed_transfer_params, wrong_sig } from './utils'
 
@@ -160,9 +160,11 @@ describe('[FA2 fungible] Add permit', async () => {
 
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id();
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     await expect_to_fail(async () => {
       await permits.permit(new Key(alice.pubk), wrong_sig, blake2b(packed_transfer_params), { as: bob })
@@ -175,15 +177,18 @@ describe('[FA2 fungible] Add permit', async () => {
 
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id();
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
 
     const wrong_permit_data = get_transfer_permit_data(
       wrong_packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
 
     await expect_to_fail(async () => {
@@ -197,9 +202,11 @@ describe('[FA2 fungible] Add permit', async () => {
 
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id();
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
 
     await expect_to_fail(async () => {
@@ -212,9 +219,11 @@ describe('[FA2 fungible] Add permit', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id();
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
     await permits.permit(new Key(alice.pubk), sig, blake2b(packed_transfer_params), { as: bob })
@@ -229,12 +238,13 @@ describe('[FA2 fungible] Add permit', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id();
 
     assert(initial_permit?.equals(get_ref_user_permits(new Nat(1), packed_transfer_params, expiry, now)))
-
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
     await expect_to_fail(async () => {
@@ -342,6 +352,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     const counter = permit?.counter
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    const chain_id = await get_chain_id()
     assert(balance_user1_before?.equals(new Nat(1)), "Invalid amount user1")
     assert(balance_user2_before == undefined, "Invalid amount user2")
 
@@ -352,6 +363,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     const after_permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user1.sign(after_permit_data)
     await fa2_fungible.transfer_gasless([
@@ -371,6 +383,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     const counter = permit?.counter
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    const chain_id = await get_chain_id()
     assert(balance_user1_before == undefined, "Invalid amount user1")
     assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
@@ -381,6 +394,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user1.sign(permit_data)
 
@@ -405,6 +419,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     const counter = permit?.counter
     const balance_user4_before = await fa2_fungible.get_ledger_value(user4.get_address())
     const balance_user5_before = await fa2_fungible.get_ledger_value(user5.get_address())
+    const chain_id = await get_chain_id();
     assert(balance_user4_before?.equals(new Nat(1)), "Invalid amount user4")
     assert(balance_user5_before == undefined, "Invalid amount user5")
 
@@ -415,6 +430,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     const after_permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user3.sign(after_permit_data)
 
@@ -432,6 +448,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     const counter = permit?.counter
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    const chain_id = await get_chain_id()
     assert(balance_user1_before == undefined, "Invalid amount user1")
     assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
@@ -442,6 +459,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
     const after_permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user2.sign(after_permit_data)
     await fa2_fungible.transfer_gasless([
@@ -463,6 +481,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     const amount = new Nat(1);
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    const chain_id = await get_chain_id()
     assert(balance_user1_before?.equals(new Nat(1)), "Invalid amount user1")
     assert(balance_user2_before == undefined, "Invalid amount user2")
     const tps = [new transfer_param(user1.get_address(),
@@ -472,6 +491,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user1.sign(permit_data);
     const lpermit = Option.Some<[Key, Signature]>([user1.get_public_key(), sig]);
@@ -489,6 +509,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     const counter = permit?.counter
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    const chain_id = await get_chain_id()
     assert(balance_user1_before == undefined, "Invalid amount user1")
     assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
@@ -499,6 +520,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user1.sign(permit_data)
     const lpermit = Option.Some<[Key, Signature]>([user2.get_public_key(), sig]);
@@ -521,6 +543,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     const counter = permit?.counter
     const balance_user4_before = await fa2_fungible.get_ledger_value(user4.get_address())
     const balance_user5_before = await fa2_fungible.get_ledger_value(user5.get_address())
+    const chain_id = await get_chain_id()
     assert(balance_user4_before?.equals(new Nat(1)), "Invalid amount user4")
     assert(balance_user5_before == undefined, "Invalid amount user5")
 
@@ -531,6 +554,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
     const after_permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user3.sign(after_permit_data)
     const lpermit = Option.Some<[Key, Signature]>([user3.get_public_key(), sig]);
@@ -588,6 +612,7 @@ describe('[FA2 fungible] Consume permit', async () => {
     const counter = permit?.counter
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    const chain_id = await get_chain_id()
     assert(balance_user1_before?.equals(new Nat(1)), "Invalid amount user1")
     assert(balance_user2_before == undefined, "Invalid amount user2")
 
@@ -598,6 +623,7 @@ describe('[FA2 fungible] Consume permit', async () => {
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user1.sign(permit_data)
 
@@ -620,6 +646,7 @@ describe('[FA2 fungible] Consume permit', async () => {
     const counter = permit?.counter
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    const chain_id = await get_chain_id()
     assert(balance_user1_before == undefined, "Invalid amount user1")
     assert(balance_user2_before?.equals(new Nat(1)), "Invalid amount user2")
 
@@ -630,6 +657,7 @@ describe('[FA2 fungible] Consume permit', async () => {
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user2.sign(permit_data)
 
@@ -652,6 +680,7 @@ describe('[FA2 fungible] Consume permit', async () => {
     const counter = permit?.counter
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
+    const chain_id = await get_chain_id()
     assert(balance_user1_before == undefined, "Invalid amount user1")
     assert(balance_user2_before?.equals(amount), "Invalid amount user2")
 
@@ -662,6 +691,7 @@ describe('[FA2 fungible] Consume permit', async () => {
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user2.sign(permit_data)
 
@@ -694,6 +724,7 @@ describe('[FA2 fungible] Consume permit', async () => {
     const permit = await permits.get_permits_value(carl.get_address())
     assert(permit == undefined, "Carl's permit should be undefined")
     const counter = new Nat(0)
+    const chain_id = await get_chain_id()
 
     const tps = [new transfer_param(carl.get_address(),
       [new transfer_destination(bob.get_address(), token_id, amount)
@@ -702,6 +733,7 @@ describe('[FA2 fungible] Consume permit', async () => {
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
 
     const sig = await carl.sign(permit_data)
@@ -819,9 +851,11 @@ describe('[FA2 fungible] Pause', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 

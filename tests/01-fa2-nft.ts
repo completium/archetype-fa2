@@ -1,5 +1,5 @@
-import { Bytes, Key, Nat, Option, Or, pair_to_mich, Signature, string_to_mich } from '@completium/archetype-ts-types'
-import { blake2b, expect_to_fail, get_account, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
+import { Bytes, Chain_id, Key, Nat, Option, Or, pair_to_mich, Signature, string_to_mich } from '@completium/archetype-ts-types'
+import { blake2b, expect_to_fail, get_account, get_chain_id, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
 
 import { get_packed_transfer_params, get_transfer_permit_data, get_missigned_error, wrong_packed_transfer_params, wrong_sig } from './utils'
 
@@ -135,9 +135,11 @@ describe('[FA2 NFT] Add permit', async () => {
 
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
 
     await expect_to_fail(async () => {
@@ -151,15 +153,18 @@ describe('[FA2 NFT] Add permit', async () => {
 
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
 
     const wrong_permit_data = get_transfer_permit_data(
       wrong_packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
 
     await expect_to_fail(async () => {
@@ -173,9 +178,11 @@ describe('[FA2 NFT] Add permit', async () => {
 
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(carl.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
 
     await expect_to_fail(async () => {
@@ -188,9 +195,11 @@ describe('[FA2 NFT] Add permit', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(carl.get_address(), one_token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
     await permits.permit(new Key(alice.pubk), sig, blake2b(packed_transfer_params), { as: bob })
@@ -205,12 +214,14 @@ describe('[FA2 NFT] Add permit', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(carl.get_address(), one_token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     assert(initial_permit?.equals(get_ref_user_permits(new Nat(1), packed_transfer_params, expiry, now)))
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
@@ -259,9 +270,12 @@ describe('[FA2 NFT] Transfers', async () => {
     let alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
+
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
@@ -282,13 +296,14 @@ describe('[FA2 NFT] Transfers', async () => {
 
   it('Transfer tokens with an operator and with permit (permit not consumed) should succeed', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
-
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(carl.get_address(), token_id, amount)])]
+    const chain_id = await get_chain_id()
 
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
@@ -331,13 +346,14 @@ describe('[FA2 NFT] Transfers', async () => {
     );
 
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
-
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), another_token, amount)])]
+    const chain_id = await get_chain_id()
 
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
@@ -373,10 +389,12 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
       ])]
 
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
@@ -389,6 +407,7 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
     const another_permit_data = get_transfer_permit_data(
       another_packed,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
 
     await expect_to_fail(async () => {
@@ -405,12 +424,13 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
     const tps = [new transfer_param(alice.get_address(),
       [new transfer_destination(bob.get_address(), token_id, amount)
       ])]
-
+    const chain_id = await get_chain_id()
     const packed_transfer_params = get_packed_transfer_params(tps)
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
@@ -425,6 +445,7 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
     const another_permit_data = get_transfer_permit_data(
       another_packed,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
 
     await expect_to_fail(async () => {
@@ -442,10 +463,12 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
       ])]
 
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
@@ -478,10 +501,12 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
     )]
 
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
@@ -517,10 +542,12 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
     )]
 
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
@@ -545,10 +572,12 @@ describe('[FA2 NFT] Transfers one-step ', async () => {
       ])]
 
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await bob.sign(permit_data)
 
@@ -573,10 +602,12 @@ describe('[FA2 NFT] Transfers one-step ', async () => {
       ])]
 
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 
@@ -591,6 +622,7 @@ describe('[FA2 NFT] Transfers one-step ', async () => {
     const another_permit_data = get_transfer_permit_data(
       another_packed,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const lpermit = Option.Some<[Key, Signature]>([alice.get_public_key(), sig]);
 
@@ -607,10 +639,12 @@ describe('[FA2 NFT] Transfers one-step ', async () => {
       ])]
 
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
     const lpermit = Option.Some<[Key, Signature]>([alice.get_public_key(), sig]);
@@ -642,10 +676,12 @@ describe('[FA2 NFT] Transfers one-step ', async () => {
     )]
 
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
     const lpermit = Option.Some<[Key, Signature]>([alice.get_public_key(), sig]);
@@ -680,10 +716,12 @@ describe('[FA2 NFT] Transfers one-step ', async () => {
     )]
 
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
 
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
     const lpermit = Option.Some<[Key, Signature]>([alice.get_public_key(), sig]);
@@ -742,9 +780,12 @@ describe('[FA2 NFT] Set expiry', async () => {
       [new transfer_destination(user1.get_address(), token_id, amount)
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
+
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await alice.sign(permit_data)
 
@@ -765,10 +806,13 @@ describe('[FA2 NFT] Set expiry', async () => {
     const tps = [new transfer_param(user2.get_address(),
       [new transfer_destination(user1.get_address(), token_id, amount)
       ])]
+    const chain_id = await get_chain_id()
+
     const packed_transfer_params = get_packed_transfer_params(tps)
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await user2.sign(permit_data)
 
@@ -796,9 +840,12 @@ describe('[FA2 NFT] Set expiry', async () => {
       [new transfer_destination(bob.get_address(), token_id, new Nat(11))
       ])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
+
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       counter);
     const sig = await carl.sign(permit_data)
 
@@ -914,9 +961,12 @@ describe('[FA2 NFT] Pause', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
+    const chain_id = await get_chain_id()
+
     const permit_data = get_transfer_permit_data(
       packed_transfer_params,
       permits.get_address(),
+      chain_id,
       alice_permit_counter);
     const sig = await alice.sign(permit_data)
 

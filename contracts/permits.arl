@@ -233,6 +233,13 @@ entry consume(user : address, permit_key: bytes, err: string) {
   }
 }
 
+record rec_to_sign_permit_data {
+  s_addr_contract : address;
+  s_chainid : chain_id;
+  s_counter : nat;
+  s_data : bytes;
+} as (((addr, chain_id), (counter, data)))
+
 entry check(signer : key, sig : signature, data : bytes) {
   no transfer
   called by consumer
