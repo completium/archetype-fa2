@@ -164,9 +164,13 @@ entry setExpiry(u : address, sec : nat, data : option<bytes>) {
   effect {
     match data with
     | some(permit_key) -> begin
+      if sec = 0 or (u_permit.user_permits[permit_key] ? now - the.created_at >= sec : false)
+      then permits[u].user_permits.remove(permit_key)
+      else begin
         const up : user_permit ?=
           u_permit.user_permits[permit_key] : (PERMIT_NOT_FOUND, (caller, permit_key));
         permits[u].user_permits.update(permit_key, some({ up with expiry = some(sec) }))
+      end
       end
     | none -> permits.update(caller, { user_expiry = some(sec) })
     end
