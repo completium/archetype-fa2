@@ -10,7 +10,10 @@
     "test-fungible": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/00-fa2-fungible.ts",
     "test-nft": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/01-fa2-nft.ts",
     "test-multi": "ts-mocha --timeout 0 --slow 99999999999999999 ./tests/02-fa2-multi.ts",
-    "gen-binding": "completium-cli generate binding-ts _ --input-path ./contracts/ --output-path ./tests/binding/"
+    "gen-binding": "completium-cli generate binding-ts _ --input-path ./contracts/ --output-path ./tests/binding/",
+    "completium_init": "completium-cli init",
+    "mockup_init": "completium-cli mockup init"
+
   },
   "dependencies": {
     "@completium/archetype-ts-types": "^0.0.18",
