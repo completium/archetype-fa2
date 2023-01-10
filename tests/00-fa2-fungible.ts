@@ -31,7 +31,7 @@ set_quiet(true);
 
 /* Now --------------------------------------------------------------------- */
 
-const now = new Date(Date.now())
+const now = new Date("2022-01-01")
 set_mockup_now(now)
 
 /* Constants & Utils ------------------------------------------------------- */
