@@ -32,10 +32,10 @@ export class remove extends consumer_op {
 }
 export const mich_to_consumer_op = (m: att.Micheline): consumer_op => {
     if ((m as att.Msingle).prim == "Left") {
-        return new add(att.mich_to_address((m as att.Msingle).args[0]));
+        return new add(att.Address.from_mich((m as att.Msingle).args[0]));
     }
     if ((m as att.Msingle).prim == "Right") {
-        return new remove(att.mich_to_address((m as att.Msingle).args[0]));
+        return new remove(att.Address.from_mich((m as att.Msingle).args[0]));
     }
     throw new Error("mich_to_consumer_op : invalid micheline");
 };
@@ -51,7 +51,7 @@ export class user_permit implements att.ArchetypeType {
         return att.micheline_equals(this.to_mich(), v.to_mich());
     }
     static from_mich(input: att.Micheline): user_permit {
-        return new user_permit(att.mich_to_option((input as att.Mpair).args[0], x => { return att.mich_to_nat(x); }), att.mich_to_date((input as att.Mpair).args[1]));
+        return new user_permit(att.Option.from_mich((input as att.Mpair).args[0], x => { return att.Nat.from_mich(x); }), att.mich_to_date((input as att.Mpair).args[1]));
     }
 }
 export class rec_to_sign_permit_data implements att.ArchetypeType {
@@ -66,7 +66,7 @@ export class rec_to_sign_permit_data implements att.ArchetypeType {
         return att.micheline_equals(this.to_mich(), v.to_mich());
     }
     static from_mich(input: att.Micheline): rec_to_sign_permit_data {
-        return new rec_to_sign_permit_data(att.mich_to_address(((input as att.Mpair).args[0] as att.Mpair).args[0]), att.mich_to_chain_id(((input as att.Mpair).args[0] as att.Mpair).args[1]), att.mich_to_nat((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[0]), att.mich_to_bytes((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[1]));
+        return new rec_to_sign_permit_data(att.Address.from_mich(((input as att.Mpair).args[0] as att.Mpair).args[0]), att.Chain_id.from_mich(((input as att.Mpair).args[0] as att.Mpair).args[1]), att.Nat.from_mich((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[0]), att.Bytes.from_mich((att.pair_to_mich((input as att.Mpair as att.Mpair).args.slice(1, 3)) as att.Mpair).args[1]));
     }
 }
 export const user_permit_mich_type: att.MichelineType = att.pair_array_to_mich_type([
@@ -104,7 +104,7 @@ export class permits_value implements att.ArchetypeType {
         return att.micheline_equals(this.to_mich(), v.to_mich());
     }
     static from_mich(input: att.Micheline): permits_value {
-        return new permits_value(att.mich_to_nat((input as att.Mpair).args[0]), att.mich_to_option((input as att.Mpair).args[1], x => { return att.mich_to_nat(x); }), att.mich_to_map((input as att.Mpair).args[2], (x, y) => [att.mich_to_bytes(x), user_permit.from_mich(y)]));
+        return new permits_value(att.Nat.from_mich((input as att.Mpair).args[0]), att.Option.from_mich((input as att.Mpair).args[1], x => { return att.Nat.from_mich(x); }), att.mich_to_map((input as att.Mpair).args[2], (x, y) => [att.Bytes.from_mich(x), user_permit.from_mich(y)]));
     }
 }
 export const permits_value_mich_type: att.MichelineType = att.pair_array_to_mich_type([
@@ -210,73 +210,73 @@ export class Permits {
         }, params)).address;
         this.address = address;
     }
-    async declare_ownership(candidate: att.Address, params: Partial<ex.Parameters>): Promise<any> {
+    async declare_ownership(candidate: att.Address, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "declare_ownership", declare_ownership_arg_to_mich(candidate), params);
         }
         throw new Error("Contract not initialised");
     }
-    async claim_ownership(params: Partial<ex.Parameters>): Promise<any> {
+    async claim_ownership(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "claim_ownership", claim_ownership_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
-    async pause(params: Partial<ex.Parameters>): Promise<any> {
+    async pause(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "pause", pause_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
-    async unpause(params: Partial<ex.Parameters>): Promise<any> {
+    async unpause(params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "unpause", unpause_arg_to_mich(), params);
         }
         throw new Error("Contract not initialised");
     }
-    async set_metadata(k: string, d: att.Option<att.Bytes>, params: Partial<ex.Parameters>): Promise<any> {
+    async set_metadata(k: string, d: att.Option<att.Bytes>, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "set_metadata", set_metadata_arg_to_mich(k, d), params);
         }
         throw new Error("Contract not initialised");
     }
-    async manage_consumer(op: consumer_op, params: Partial<ex.Parameters>): Promise<any> {
+    async manage_consumer(op: consumer_op, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "manage_consumer", manage_consumer_arg_to_mich(op), params);
         }
         throw new Error("Contract not initialised");
     }
-    async set_expiry(iv: att.Option<att.Nat>, ip: att.Option<att.Bytes>, params: Partial<ex.Parameters>): Promise<any> {
+    async set_expiry(iv: att.Option<att.Nat>, ip: att.Option<att.Bytes>, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "set_expiry", set_expiry_arg_to_mich(iv, ip), params);
         }
         throw new Error("Contract not initialised");
     }
-    async setExpiry(u: att.Address, sec: att.Nat, data: att.Option<att.Bytes>, params: Partial<ex.Parameters>): Promise<any> {
+    async setExpiry(u: att.Address, sec: att.Nat, data: att.Option<att.Bytes>, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "setExpiry", setExpiry_arg_to_mich(u, sec, data), params);
         }
         throw new Error("Contract not initialised");
     }
-    async set_default_expiry(v: att.Nat, params: Partial<ex.Parameters>): Promise<any> {
+    async set_default_expiry(v: att.Nat, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "set_default_expiry", set_default_expiry_arg_to_mich(v), params);
         }
         throw new Error("Contract not initialised");
     }
-    async permit(signer: att.Key, sig: att.Signature, permit_key: att.Bytes, params: Partial<ex.Parameters>): Promise<any> {
+    async permit(signer: att.Key, sig: att.Signature, permit_key: att.Bytes, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "permit", permit_arg_to_mich(signer, sig, permit_key), params);
         }
         throw new Error("Contract not initialised");
     }
-    async consume(user: att.Address, permit_key: att.Bytes, err: string, params: Partial<ex.Parameters>): Promise<any> {
+    async consume(user: att.Address, permit_key: att.Bytes, err: string, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "consume", consume_arg_to_mich(user, permit_key, err), params);
         }
         throw new Error("Contract not initialised");
     }
-    async check(signer: att.Key, sig: att.Signature, data: att.Bytes, params: Partial<ex.Parameters>): Promise<any> {
+    async check(signer: att.Key, sig: att.Signature, data: att.Bytes, params: Partial<ex.Parameters>): Promise<att.CallResult> {
         if (this.address != undefined) {
             return await ex.call(this.address, "check", check_arg_to_mich(signer, sig, data), params);
         }
@@ -357,14 +357,14 @@ export class Permits {
     async get_owner(): Promise<att.Address> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_address((storage as att.Mpair).args[0]);
+            return att.Address.from_mich((storage as att.Mpair).args[0]);
         }
         throw new Error("Contract not initialised");
     }
     async get_owner_candidate(): Promise<att.Option<att.Address>> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_option((storage as att.Mpair).args[1], x => { return att.mich_to_address(x); });
+            return att.Option.from_mich((storage as att.Mpair).args[1], x => { return att.Address.from_mich(x); });
         }
         throw new Error("Contract not initialised");
     }
@@ -378,14 +378,14 @@ export class Permits {
     async get_consumer(): Promise<consumer_container> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_list((storage as att.Mpair).args[3], x => { return att.mich_to_address(x); });
+            return att.mich_to_list((storage as att.Mpair).args[3], x => { return att.Address.from_mich(x); });
         }
         throw new Error("Contract not initialised");
     }
     async get_permits_value(key: att.Address): Promise<permits_value | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[4]).toString()), key.to_mich(), permits_key_mich_type);
+            const data = await ex.get_big_map_value(BigInt(att.Int.from_mich((storage as att.Mpair).args[4]).toString()), key.to_mich(), permits_key_mich_type);
             if (data != undefined) {
                 return permits_value.from_mich(data);
             }
@@ -398,7 +398,7 @@ export class Permits {
     async has_permits_value(key: att.Address): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[4]).toString()), key.to_mich(), permits_key_mich_type);
+            const data = await ex.get_big_map_value(BigInt(att.Int.from_mich((storage as att.Mpair).args[4]).toString()), key.to_mich(), permits_key_mich_type);
             if (data != undefined) {
                 return true;
             }
@@ -411,16 +411,16 @@ export class Permits {
     async get_default_expiry(): Promise<att.Nat> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            return att.mich_to_nat((storage as att.Mpair).args[5]);
+            return att.Nat.from_mich((storage as att.Mpair).args[5]);
         }
         throw new Error("Contract not initialised");
     }
     async get_metadata_value(key: string): Promise<att.Bytes | undefined> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[6]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
+            const data = await ex.get_big_map_value(BigInt(att.Int.from_mich((storage as att.Mpair).args[6]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
             if (data != undefined) {
-                return att.mich_to_bytes(data);
+                return att.Bytes.from_mich(data);
             }
             else {
                 return undefined;
@@ -431,7 +431,7 @@ export class Permits {
     async has_metadata_value(key: string): Promise<boolean> {
         if (this.address != undefined) {
             const storage = await ex.get_raw_storage(this.address);
-            const data = await ex.get_big_map_value(BigInt(att.mich_to_int((storage as att.Mpair).args[6]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
+            const data = await ex.get_big_map_value(BigInt(att.Int.from_mich((storage as att.Mpair).args[6]).toString()), att.string_to_mich(key), att.prim_annot_to_mich_type("string", []));
             if (data != undefined) {
                 return true;
             }
