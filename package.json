@@ -16,8 +16,8 @@
 
   },
   "dependencies": {
-    "@completium/archetype-ts-types": "^0.1.8",
-    "@completium/completium-cli": "^0.4.78",
+    "@completium/archetype-ts-types": "^0.1.10",
+    "@completium/completium-cli": "^1.0.0",
     "@completium/experiment-ts": "^0.1.13"
   },
   "devDependencies": {
