@@ -1,13 +1,13 @@
-import { Bytes, Chain_id, Key, Nat, Option, Or, pair_to_mich, Signature, string_to_mich } from '@completium/archetype-ts-types'
+import { Bytes, Key, Nat, Option, pair_to_mich, Signature, string_to_mich } from '@completium/archetype-ts-types'
 import { blake2b, expect_to_fail, get_account, get_chain_id, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
 
 import { get_packed_transfer_params, get_transfer_permit_data, get_missigned_error, wrong_packed_transfer_params, wrong_sig } from './utils'
 
-const assert = require('assert');
+import assert from 'assert';
 
 /* Contracts */
 
-import { add_operator, balance_of_request, fa2_nft, gasless_param, operator_key, operator_param, part, transfer_destination, transfer_param } from './binding/fa2_nft';
+import { add_operator, balance_of_request, fa2_nft, gasless_param, operator_param, part, transfer_destination, transfer_param } from './binding/fa2_nft';
 import { add, permits, permits_value, user_permit } from './binding/permits';
 
 /* Accounts ----------------------------------------------------------------- */
@@ -49,7 +49,7 @@ const get_ref_user_permits = (counter: Nat, data: Bytes, expiry: Nat, now: Date)
 
 /* Scenarios --------------------------------------------------------------- */
 
-describe('[FA2 NFT] Contracts deployment', async () => {
+describe('[FA2 NFT] Contracts deployment', () => {
   it('Permits contract deployment should succeed', async () => {
     await permits.deploy(alice.get_address(), { as: alice })
   });
@@ -58,13 +58,13 @@ describe('[FA2 NFT] Contracts deployment', async () => {
   });
 });
 
-describe('[FA2 NFT] Contract configuration', async () => {
+describe('[FA2 NFT] Contract configuration', () => {
   it("Add FA2 as permit consumer", async () => {
     await permits.manage_consumer(new add(fa2_nft.get_address()), { as: alice })
   })
 })
 
-describe('[FA2 NFT] Minting', async () => {
+describe('[FA2 NFT] Minting', () => {
   it('Mint tokens on FA2 as owner for owner should succeed', async () => {
     await fa2_nft.mint(
       alice.get_address(),      // owner
@@ -129,7 +129,7 @@ describe('[FA2 NFT] Minting', async () => {
 
 });
 
-describe('[FA2 NFT] Add permit', async () => {
+describe('[FA2 NFT] Add permit', () => {
   it('Add a permit with the wrong signature should fail', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
 
@@ -232,7 +232,7 @@ describe('[FA2 NFT] Add permit', async () => {
 
 });
 
-describe('[FA2 NFT] Transfers', async () => {
+describe('[FA2 NFT] Transfers', () => {
   it('Transfer a token not owned should fail', async () => {
     await expect_to_fail(async () => {
       await fa2_nft.transfer([new transfer_param(
@@ -267,7 +267,7 @@ describe('[FA2 NFT] Transfers', async () => {
 
     const new_expiry = new Nat(3600);
 
-    let alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
+    const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
     const tps = [new transfer_param(alice.get_address(), [new transfer_destination(bob.get_address(), token_id, amount)])]
     const packed_transfer_params = get_packed_transfer_params(tps)
     const chain_id = await get_chain_id()
@@ -380,7 +380,7 @@ describe('[FA2 NFT] Transfers', async () => {
   });
 })
 
-describe('[FA2 NFT] Transfers gasless ', async () => {
+describe('[FA2 NFT] Transfers gasless ', () => {
   it('Transfer a token not owned should fail', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
 
@@ -563,7 +563,7 @@ describe('[FA2 NFT] Transfers gasless ', async () => {
   });
 });
 
-describe('[FA2 NFT] Transfers one-step ', async () => {
+describe('[FA2 NFT] Transfers one-step ', () => {
   it('Transfer a token not owned should fail', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
 
@@ -736,7 +736,7 @@ describe('[FA2 NFT] Transfers one-step ', async () => {
   });
 });
 
-describe('[FA2 NFT] Set metadata', async () => {
+describe('[FA2 NFT] Set metadata', () => {
   it('Set metadata with empty content should succeed', async () => {
     const metadata_before = await fa2_nft.get_metadata_value("key")
     assert(metadata_before == undefined);
@@ -765,7 +765,7 @@ describe('[FA2 NFT] Set metadata', async () => {
   });
 });
 
-describe('[FA2 NFT] Set expiry', async () => {
+describe('[FA2 NFT] Set expiry', () => {
 
   it('Set global expiry with too big value should fail', async () => {
     await expect_to_fail(async () => {
@@ -864,7 +864,7 @@ describe('[FA2 NFT] Set expiry', async () => {
 
 });
 
-describe('[FA2 NFT] Burn', async () => {
+describe('[FA2 NFT] Burn', () => {
   it('Burn without tokens should fail', async () => {
     await expect_to_fail(async () => {
       await fa2_nft.burn(token_id, { as: alice })
@@ -919,7 +919,7 @@ describe('[FA2 NFT] Burn', async () => {
   });
 });
 
-describe('[FA2 NFT] Pause', async () => {
+describe('[FA2 NFT] Pause', () => {
   it('Set FA2 on pause should succeed', async () => {
     await fa2_nft.pause({ as: alice });
     const is_paused = await fa2_nft.get_paused()
@@ -1017,7 +1017,7 @@ describe('[FA2 NFT] Pause', async () => {
   });
 });
 
-describe('[FA2 NFT] Transfer ownership', async () => {
+describe('[FA2 NFT] Transfer ownership', () => {
 
   it('Transfer ownership when contract is paused should succeed', async () => {
     const owner = await fa2_nft.get_owner()
@@ -1043,7 +1043,7 @@ describe('[FA2 NFT] Transfer ownership', async () => {
   });
 });
 
-describe('[FA2 NFT] Balance of', async () => {
+describe('[FA2 NFT] Balance of', () => {
 
   it('Unknown token_id should fail', async () => {
     const fake_token = new Nat(56)

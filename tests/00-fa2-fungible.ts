@@ -1,9 +1,9 @@
-import { Bytes, Key, MichelineType, Nat, Option, Or, pair_to_mich, Signature, string_to_mich } from '@completium/archetype-ts-types'
-import { blake2b, expect_to_fail, get_account, get_chain_id, pack, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
+import { Bytes, Key, Nat, Option, pair_to_mich, Signature, string_to_mich } from '@completium/archetype-ts-types'
+import { blake2b, expect_to_fail, get_account, get_chain_id, set_mockup, set_mockup_now, set_quiet } from '@completium/experiment-ts'
 
 import { get_packed_transfer_params, get_transfer_permit_data, get_missigned_error, wrong_packed_transfer_params, wrong_sig } from './utils'
 
-const assert = require('assert');
+import assert from 'assert';
 
 /* Contracts */
 
@@ -49,7 +49,7 @@ const get_ref_user_permits = (counter: Nat, data: Bytes, expiry: Nat, now: Date)
 
 /* Scenarios --------------------------------------------------------------- */
 
-describe('[FA2 fungible] Contracts deployment', async () => {
+describe('[FA2 fungible] Contracts deployment', () => {
   it('Permits contract deployment should succeed', async () => {
     await permits.deploy(alice.get_address(), { as: alice })
   });
@@ -58,13 +58,13 @@ describe('[FA2 fungible] Contracts deployment', async () => {
   });
 });
 
-describe('[FA2 fungible] Contract configuration', async () => {
+describe('[FA2 fungible] Contract configuration', () => {
   it("Add FA2 as permit consumer", async () => {
     await permits.manage_consumer(new add(fa2_fungible.get_address()), { as: alice })
   })
 })
 
-describe('[FA2 fungible] Minting', async () => {
+describe('[FA2 fungible] Minting', () => {
   it('Mint tokens as owner for ourself should succeed', async () => {
     const balance_alice_before = await fa2_fungible.get_ledger_value(alice.get_address())
     assert(balance_alice_before?.equals(new Nat('123000000000000')), "Invalid amount")
@@ -108,7 +108,7 @@ describe('[FA2 fungible] Minting', async () => {
   });
 });
 
-describe('[FA2 fungible] Update operators', async () => {
+describe('[FA2 fungible] Update operators', () => {
   it('Add an operator for ourself should succeed', async () => {
     const op_key = new operator_key(fa2_fungible.get_address(), token_id, alice.get_address())
     const has_operator_before = await fa2_fungible.has_operator_value(op_key)
@@ -154,7 +154,7 @@ describe('[FA2 fungible] Update operators', async () => {
   });
 });
 
-describe('[FA2 fungible] Add permit', async () => {
+describe('[FA2 fungible] Add permit', () => {
   it('Add a permit with the wrong signature should fail', async () => {
     const alice_permit_counter = (await permits.get_permits_value(alice.get_address()))?.counter
 
@@ -254,7 +254,7 @@ describe('[FA2 fungible] Add permit', async () => {
 
 });
 
-describe('[FA2 fungible] Transfers', async () => {
+describe('[FA2 fungible] Transfers', () => {
   it('Transfer simple amount of token', async () => {
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
@@ -345,7 +345,7 @@ describe('[FA2 fungible] Transfers', async () => {
 
 });
 
-describe('[FA2 fungible] Transfers gasless ', async () => {
+describe('[FA2 fungible] Transfers gasless ', () => {
   it('Transfer gasless simple amount of token', async () => {
     const amount = new Nat(1);
     const permit = await permits.get_permits_value(user1.get_address())
@@ -474,7 +474,7 @@ describe('[FA2 fungible] Transfers gasless ', async () => {
   });
 });
 
-describe('[FA2 fungible] Transfers one-step ', async () => {
+describe('[FA2 fungible] Transfers one-step ', () => {
   it('Transfer one-step simple amount of token', async () => {
     const permit = await permits.get_permits_value(user1.get_address())
     const counter = permit?.counter
@@ -566,8 +566,6 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
 
   it('Transfer one-step without permit (None value) should succed', async () => {
     const amount = new Nat(1);
-    const permit = await permits.get_permits_value(user2.get_address())
-    const counter = permit?.counter
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     const balance_user2_before = await fa2_fungible.get_ledger_value(user2.get_address())
     assert(balance_user1_before == undefined, "Invalid amount user1")
@@ -594,7 +592,7 @@ describe('[FA2 fungible] Transfers one-step ', async () => {
 
 });
 
-describe('[FA2 fungible] Consume permit', async () => {
+describe('[FA2 fungible] Consume permit', () => {
 
   it('Set global expiry with too big value should fail', async () => {
     await expect_to_fail(async () => {
@@ -751,7 +749,7 @@ describe('[FA2 fungible] Consume permit', async () => {
 
 });
 
-describe('[FA2 fungible] Set metadata', async () => {
+describe('[FA2 fungible] Set metadata', () => {
   it('Set metadata with empty content should succeed', async () => {
     const metadata_before = await fa2_fungible.get_metadata_value("key")
     assert(metadata_before == undefined);
@@ -780,7 +778,7 @@ describe('[FA2 fungible] Set metadata', async () => {
   });
 });
 
-describe('[FA2 fungible] Burn', async () => {
+describe('[FA2 fungible] Burn', () => {
   it('Burn token should succeed', async () => {
     const balance_user1_before = await fa2_fungible.get_ledger_value(user1.get_address())
     assert(balance_user1_before?.equals(new Nat(2)), "Invalid amount user1")
@@ -821,7 +819,7 @@ describe('[FA2 fungible] Burn', async () => {
 
 });
 
-describe('[FA2 fungible] Pause', async () => {
+describe('[FA2 fungible] Pause', () => {
   it('Set FA2 on pause should succeed', async () => {
     await fa2_fungible.pause({ as: alice });
     const is_paused = await fa2_fungible.get_paused()
@@ -906,7 +904,7 @@ describe('[FA2 fungible] Pause', async () => {
   });
 });
 
-describe('[FA2 fungible] Transfer ownership', async () => {
+describe('[FA2 fungible] Transfer ownership', () => {
 
   it('Transfer ownership when contract is paused should succeed', async () => {
     const owner = await fa2_fungible.get_owner()
@@ -933,7 +931,7 @@ describe('[FA2 fungible] Transfer ownership', async () => {
 });
 
 
-describe('[FA2 fungible] Balance of', async () => {
+describe('[FA2 fungible] Balance of', () => {
 
   it('Simple balance of', async () => {
     const balance_alice = await fa2_fungible.get_ledger_value(alice.get_address())
